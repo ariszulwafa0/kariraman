@@ -1,0 +1,13 @@
+{
+  "name": "kariraman-api",
+  "version": "1.0.0",
+  "description": "API untuk verifikasi lowongan kerja KarirAman",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.14.1",
+    "dotenv": "^16.4.5"
+  }
+}
