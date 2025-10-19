@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KarirAman - Verifikasi Lowongan Kerja Berbasis AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-light: #eaebed;
+            --primary-blue: #006989;
+            --text-dark: #2c3e50;
+            --accent-gold: #E1A23A;
+            --white: #ffffff;
+            --border-light: #dce0e4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        .container { max-width: 1140px; margin: 0 auto; padding: 0 20px; }
+        h1, h2 { font-weight: 800; color: var(--primary-blue); }
+        h1 { font-size: 3.8rem; line-height: 1.2; letter-spacing: -1.5px; }
+        h2 { font-size: 2.5rem; text-align: center; margin-bottom: 1rem; }
+        p.subtitle { text-align: center; font-size: 1.1rem; max-width: 600px; margin: 0 auto 60px; opacity: 0.8; }
+        section { padding: 100px 0; }
+        .animated {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .animated.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Header */
+        header {
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            background: rgba(234, 235, 237, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-light);
+        }
+        header .container { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.8rem; font-weight: 800; color: var(--primary-blue); text-decoration: none; }
+        nav { display: flex; gap: 30px; align-items: center; }
+        nav a { text-decoration: none; color: var(--text-dark); font-weight: 500; }
+        .cta-button {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        .cta-outline { border: 2px solid var(--primary-blue); color: var(--primary-blue); }
+        .cta-outline:hover { background-color: var(--primary-blue); color: var(--white); }
+        .cta-filled { background-color: var(--primary-blue); color: var(--white); }
+        .cta-filled:hover { background-color: #004b62; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        
+        /* Hamburger Menu for Mobile */
+        .menu-toggle { display: none; cursor: pointer; }
+        .menu-toggle span { display: block; width: 25px; height: 3px; background-color: var(--primary-blue); margin: 5px 0; }
+
+        /* Hero Section */
+        #home {
+            padding-top: 220px;
+            padding-bottom: 120px;
+            text-align: center;
+        }
+        #home h1 { max-width: 800px; margin: 0 auto; }
+        #home .subheadline { font-size: 1.2rem; max-width: 600px; margin: 24px auto 40px; }
+        #home .cta-hero-btn { background-color: var(--accent-gold); color: var(--white); font-size: 1.1rem; padding: 15px 35px; }
+        #home .cta-hero-btn:hover { background-color: #d08c2a; }
+        #home .hero-image-container { margin-top: 80px; }
+        #home .hero-image { max-width: 80%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 105, 137, 0.15); }
+
+        /* Keunggulan Section */
+        #keunggulan { background-color: var(--white); }
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .feature-card {
+            background: var(--bg-light);
+            padding: 35px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .feature-card .icon { font-size: 2.5rem; color: var(--primary-blue); margin-bottom: 20px; }
+        .feature-card h3 { font-size: 1.3rem; margin-bottom: 10px; font-weight: 700; }
+        
+        /* Testimonials Section */
+        .testimonial-container {
+            width: 100%;
+            overflow: hidden; /* Menyembunyikan card di luar area */
+        }
+        @keyframes slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        .testimonial-slider {
+            display: flex;
+            width: calc(350px * 8); /* Lebar card * jumlah card (4 asli + 4 duplikat) */
+            animation: slide 40s linear infinite;
+        }
+        .testimonial-slider:hover { animation-play-state: paused; }
+        .testimonial-card {
+            width: 350px;
+            flex-shrink: 0;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            margin: 0 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .testimonial-card .quote { flex-grow: 1; font-size: 1rem; font-style: italic; margin-bottom: 20px; }
+        .testimonial-author { display: flex; align-items: center; gap: 15px; }
+        .testimonial-author img { width: 45px; height: 45px; border-radius: 50%; }
+        .author-info .name { font-weight: 700; }
+        .author-info .title { font-size: 0.9rem; color: #777; }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            padding: 80px 0 30px;
+        }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 60px; }
+        .footer-grid h4 { margin-bottom: 20px; font-size: 1.1rem; color: var(--white); opacity: 0.9; }
+        .footer-grid p { color: var(--border-light); opacity: 0.7; }
+        .footer-grid a { color: var(--border-light); text-decoration: none; display: block; margin-bottom: 12px; transition: opacity 0.3s ease; opacity: 0.7; }
+        .footer-grid a:hover { opacity: 1; }
+        .footer-socials { margin-top: 20px; display: flex; gap: 20px; }
+        .footer-socials a { font-size: 1.5rem; }
+        .footer-bottom { text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 30px; color: var(--border-light); opacity: 0.6; }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            nav { display: none; }
+            .menu-toggle { display: block; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 2.8rem; }
+            h2 { font-size: 2rem; }
+            section { padding: 80px 0; }
+            #home { padding-top: 150px; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <a href="#home" class="logo">KarirAman</a>
+            <nav>
+                <a href="#keunggulan">Keunggulan</a>
+                <a href="#testimoni">Testimoni</a>
+                <a href="/documentation" class="cta-button cta-outline">Dokumentasi API</a>
+            </nav>
+            <a href="https://wa.me/628" target="_blank" class="cta-button cta-filled">Hubungkan WhatsApp</a>
+            <div class="menu-toggle"><span></span><span></span><span></span></div>
+        </div>
+    </header>
+
+    <main>
+        <section id="home">
+            <div class="container animated">
+                <h1>Lamar Kerja dengan Tenang,<br>Biarkan AI Melindungi Anda.</h1>
+                <p class="subheadline">KarirAman adalah perisai cerdas Anda di dunia rekrutmen. Verifikasi setiap lowongan kerja dari penipuan, langsung melalui WhatsApp.</p>
+                <a href="https://wa.me/NOMOR_BOT_ANDA" target="_blank" class="cta-button cta-hero-btn">
+                    <i class="fab fa-whatsapp"></i> Coba Gratis Sekarang
+                </a>
+                <div class="hero-image-container">
+                    <img src="https://i.imgur.com/L5n4xYp.png" alt="Tampilan Bot KarirAman" class="hero-image">
+                </div>
+            </div>
+        </section>
+
+        <section id="keunggulan">
+            <div class="container">
+                <h2 class="animated">Satu Bot, Perlindungan Lengkap</h2>
+                <p class="subtitle animated">Kami menggabungkan teknologi AI terdepan dengan pemahaman mendalam tentang rekrutmen di Indonesia.</p>
+                <div class="features-grid">
+                    <div class="feature-card animated">
+                        <div class="icon"><i class="fas fa-shield-alt"></i></div>
+                        <h3>Analisis Cerdas 360°</h3>
+                        <p>Memindai teks, gambar, PDF, hingga link. AI "Budi" mendeteksi red flag yang sering terlewat oleh mata manusia.</p>
+                    </div>
+                    <div class="feature-card animated" style="transition-delay: 150ms;">
+                        <div class="icon"><i class="fas fa-user-tie"></i></div>
+                        <h3>Asisten Karier Personal</h3>
+                        <p>Tidak hanya melindungi, kami membantu Anda. Dapatkan review profesional untuk CV dan surat lamaran agar lebih menonjol.</p>
+                    </div>
+                    <div class="feature-card animated" style="transition-delay: 300ms;">
+                        <div class="icon"><i class="fas fa-database"></i></div>
+                        <h3>Verifikasi Data Lanjutan</h3>
+                        <p>Cek profil perusahaan, validitas alamat, hingga rekam jejak nomor rekening langsung dari sumber terpercaya.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="testimoni">
+            <div class="container">
+                <h2 class="animated">Kisah Mereka yang Lebih Aman</h2>
+            </div>
+            <div class="testimonial-container animated">
+                <div class="testimonial-slider">
+                    <div class="testimonial-card">
+                        <p class="quote">"Fitur review CV-nya benar-benar game-changer! Masukannya detail seperti dari HRD asli. Setelah direvisi, CV saya jadi jauh lebih profesional."</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/45?u=sari" alt="Profil Sari">
+                            <div class="author-info"><div class="name">Sari Kartika</div><div class="title">Desainer Grafis</div></div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p class="quote">"Nyaris kena tipu loker BUMN palsu yang minta transfer. Untung langsung saya cek di KarirAman. Bot-nya langsung bilang ini 100% penipuan. Terima kasih!"</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/45?u=andi" alt="Profil Andi">
+                            <div class="author-info"><div class="name">Andi Hermawan</div><div class="title">Fresh Graduate</div></div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p class="quote">"Sebagai orang tua, saya jadi lebih tenang saat anak saya mencari kerja. Saya minta dia cek semua loker di sini dulu. Sangat membantu."</p>
+                        <div class="author-info"><div class="name">Ibu Ratna</div><div class="title">Orang Tua</div></div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <p class="quote">"Simpel tapi sangat powerful. Setiap ada broadcast loker di grup, langsung forward ke KarirAman. Nggak buang-buang waktu untuk loker abal-abal lagi."</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/45?u=budi" alt="Profil Budi">
+                            <div class="author-info"><div class="name">Budi Santoso</div><div class="title">Pencari Kerja</div></div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card"><p class="quote">"Fitur review CV-nya benar-benar game-changer! Masukannya detail seperti dari HRD asli. Setelah direvisi, CV saya jadi jauh lebih profesional."</p><div class="testimonial-author"><img src="https://i.pravatar.cc/45?u=sari" alt="Profil Sari"><div class="author-info"><div class="name">Sari Kartika</div><div class="title">Desainer Grafis</div></div></div></div>
+                    <div class="testimonial-card"><p class="quote">"Nyaris kena tipu loker BUMN palsu yang minta transfer. Untung langsung saya cek di KarirAman. Bot-nya langsung bilang ini 100% penipuan. Terima kasih!"</p><div class="testimonial-author"><img src="https://i.pravatar.cc/45?u=andi" alt="Profil Andi"><div class="author-info"><div class="name">Andi Hermawan</div><div class="title">Fresh Graduate</div></div></div></div>
+                    <div class="testimonial-card"><p class="quote">"Sebagai orang tua, saya jadi lebih tenang saat anak saya mencari kerja. Saya minta dia cek semua loker di sini dulu. Sangat membantu."</p><div class="testimonial-author"><img src="https://i.pravatar.cc/45?u=ratna" alt="Profil Ratna"><div class="author-info"><div class="name">Ibu Ratna</div><div class="title">Orang Tua</div></div></div></div>
+                    <div class="testimonial-card"><p class="quote">"Simpel tapi sangat powerful. Setiap ada broadcast loker di grup, langsung forward ke KarirAman. Nggak buang-buang waktu untuk loker abal-abal lagi."</p><div class="testimonial-author"><img src="https://i.pravatar.cc/45?u=budi" alt="Profil Budi"><div class="author-info"><div class="name">Budi Santoso</div><div class="title">Pencari Kerja</div></div></div></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <h4>KarirAman</h4>
+                    <p>Misi kami adalah menciptakan ekosistem pencarian kerja yang lebih aman dan terpercaya di Indonesia melalui teknologi AI.</p>
+                </div>
+                <div>
+                    <h4>Navigasi</h4>
+                    <a href="#home">Utama</a>
+                    <a href="#keunggulan">Keunggulan</a>
+                    <a href="#testimoni">Testimoni</a>
+                </div>
+                <div>
+                    <h4>Perusahaan</h4>
+                    <a href="#">Tentang Kami</a>
+                    <a href="/documentation">Dokumentasi API</a>
+                    <a href="#">Karier</a>
+                    <a href="#">Hubungi Kami</a>
+                </div>
+                <div>
+                    <h4>Legal</h4>
+                    <a href="#">Kebijakan Privasi</a>
+                    <a href="#">Syarat & Ketentuan</a>
+                    <a href="#">Disclaimer</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2025 KarirAman. Dibuat untuk melindungi perjalanan karier Anda.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Script untuk animasi scroll
+            const animatedElements = document.querySelectorAll('.animated');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+            animatedElements.forEach(el => { observer.observe(el); });
+        });
+    </script>
+
+</body>
+</html>
