@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KarirAman - Verifikasi Lowongan Kerja & Asisten Karier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Quicksand:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-light: #ffffff; /* Sesuai permintaan: background putih bersih */
+            --bg-offwhite: #f7f9fc;
+            --primary-blue: #006989;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --accent-gold: #E1A23A;
+            --border-light: #e5e7eb;
+            --font-heading: 'Poppins', sans-serif;
+            --font-body: 'Quicksand', sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+        h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 800; color: var(--primary-blue); }
+        h1 { font-size: 4rem; line-height: 1.15; letter-spacing: -2px; }
+        h2 { font-size: 2.8rem; text-align: center; margin-bottom: 20px; }
+        p { font-size: 1.1rem; color: var(--text-muted); font-weight: 500; }
+        p.subtitle { text-align: center; max-width: 600px; margin: 0 auto 60px; }
+        section { padding: 100px 0; overflow: hidden; }
+        .animated { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+        .animated.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Header & Mobile Full-Screen Menu */
+        header {
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-light);
+        }
+        .navbar { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 2rem; font-weight: 800; color: var(--primary-blue); text-decoration: none; }
+        .nav-desktop { display: flex; gap: 40px; align-items: center; }
+        .nav-desktop a { text-decoration: none; color: var(--text-dark); font-weight: 700; font-family: var(--font-heading); }
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 28px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            font-family: var(--font-heading);
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary-blue);
+        }
+        .cta-filled { background-color: var(--primary-blue); color: var(--white); }
+        .cta-filled:hover { background-color: #004b62; border-color: #004b62; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 105, 137, 0.15); }
+        .hamburger { display: none; cursor: pointer; z-index: 1001; }
+        .hamburger .bar { display: block; width: 28px; height: 3px; margin: 6px auto; transition: all 0.4s ease; background-color: var(--primary-blue); border-radius: 2px; }
+        .hamburger.active .bar { background-color: var(--primary-blue); }
+        .hamburger.active .bar:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+        .hamburger.active .bar:nth-child(2) { opacity: 0; }
+        .hamburger.active .bar:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+
+        .mobile-nav {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-light);
+            z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transform: translateY(-20px);
+            transition: opacity 0.4s ease, visibility 0.4s ease, transform 0.4s ease;
+        }
+        .mobile-nav.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .mobile-nav ul { list-style: none; text-align: center; }
+        .mobile-nav ul li { margin: 30px 0; }
+        .mobile-nav ul li a { color: var(--primary-blue); text-decoration: none; font-size: 2.5rem; font-weight: 700; font-family: var(--font-heading); }
+
+        /* Hero Section */
+        #home { padding-top: 200px; padding-bottom: 150px; text-align: center; }
+        #home .subheadline { font-size: 1.25rem; max-width: 600px; margin: 24px auto 40px; }
+        .hero-cards { display: flex; justify-content: center; gap: 20px; margin-top: 60px; flex-wrap: wrap; }
+        .hero-card {
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            animation: float 6s ease-in-out infinite;
+        }
+        .hero-card:nth-child(2) { animation-delay: 2s; }
+        .hero-card:nth-child(3) { animation-delay: 4s; }
+        .hero-card .icon { font-size: 1.5rem; color: var(--primary-blue); }
+        .hero-card span { font-weight: 700; font-family: var(--font-heading); }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        /* Features/Keunggulan Section */
+        #keunggulan { background-color: var(--bg-offwhite); }
+        .tabs-container { max-width: 900px; margin: 0 auto; }
+        .tab-buttons { display: flex; gap: 20px; border-bottom: 1px solid var(--border-light); margin-bottom: 40px; }
+        .tab-button {
+            padding: 15px 0;
+            border: none;
+            background: none;
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            position: relative;
+        }
+        .tab-button::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 0;
+            width: 0; height: 3px;
+            background-color: var(--primary-blue);
+            transition: width 0.3s ease;
+        }
+        .tab-button.active { color: var(--primary-blue); }
+        .tab-button.active::after { width: 100%; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+        .tab-content-inner img { max-width: 100%; border-radius: 12px; }
+        .tab-content-inner h3 { font-size: 2rem; margin-bottom: 15px; }
+        
+        /* Testimoni Section */
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 30px;
+            align-items: flex-start;
+        }
+        .testimonial-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .testimonial-card.main { grid-column: span 7; }
+        .testimonial-card.side { grid-column: span 5; }
+        .testimonial-card .quote { font-size: 1.2rem; font-weight: 500; font-style: italic; margin-bottom: 20px; }
+        .testimonial-author { display: flex; align-items: center; gap: 15px; }
+        .testimonial-author img { width: 50px; height: 50px; border-radius: 50%; }
+        .author-info .name { font-weight: 700; font-family: var(--font-heading); }
+        .author-info .title { font-size: 0.9rem; color: var(--text-muted); }
+
+        /* Footer */
+        footer { background-color: var(--bg-offwhite); padding: 80px 0 40px; }
+        .footer-content {
+            border-top: 1px solid var(--border-light);
+            padding-top: 60px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            flex-wrap: wrap; gap: 40px;
+        }
+        .footer-left .logo { margin-bottom: 20px; display: block; }
+        .footer-links { display: flex; gap: 60px; }
+        .footer-links ul { list-style: none; }
+        .footer-links ul li { margin-bottom: 15px; }
+        .footer-links ul li.heading { font-weight: 700; color: var(--text-dark); margin-bottom: 20px; font-family: var(--font-heading); }
+        .footer-links a { text-decoration: none; color: var(--text-muted); font-weight: 500; }
+        .footer-bottom { border-top: 1px solid var(--border-light); padding-top: 30px; margin-top: 60px; display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.9rem;}
+        .footer-socials a { color: var(--text-muted); font-size: 1.2rem; margin-left: 20px; }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            h1 { font-size: 3rem; }
+            .nav-desktop { display: none; }
+            .hamburger { display: flex; flex-direction: column; justify-content: center; }
+            .tab-content-inner { grid-template-columns: 1fr; }
+            .tab-content-inner img { margin-top: 30px; }
+            .testimonial-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; } h2 { font-size: 2.2rem; }
+            section { padding: 80px 0; } #home { padding-top: 150px; }
+            .footer-content, .footer-bottom { flex-direction: column; }
+            .footer-links { gap: 40px; width: 100%; justify-content: space-between; }
+            .footer-bottom { align-items: flex-start; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="header">
+        <div class="container">
+            <div class="navbar">
+                <a href="#home" class="logo">KarirAman</a>
+                <div class="nav-desktop">
+                    <a href="#keunggulan">Keunggulan</a>
+                    <a href="#testimoni">Testimoni</a>
+                    <a href="./documentation/" class="cta-button cta-outline">Dokumentasi API</a>
+                </div>
+                <div class="hamburger" id="hamburger-menu">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="mobile-nav" id="mobile-menu">
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#keunggulan">Keunggulan</a></li>
+            <li><a href="#testimoni">Testimoni</a></li>
+            <li><a href="./documentation/">Dokumentasi API</a></li>
+            <li><a href="https://wa.me/628983631509" style="font-size: 1.8rem;">Hubungi WA</a></li>
+        </ul>
+    </div>
+
+    <main>
+        <section id="home">
+            <div class="container">
+                <div style="text-align: center;">
+                    <h1 class="animated">Cari Kerja Lebih Tenang,<br>Tanpa Takut Ditipu.</h1>
+                    <p class="subheadline animated" style="transition-delay: 100ms;">KarirAman adalah asisten cerdas berbasis AI yang melindungi setiap langkah Anda. Verifikasi lowongan, review CV, dan dapatkan kepastian, semua langsung di WhatsApp.</p>
+                    <div class="animated" style="transition-delay: 200ms;">
+                        <a href="https://wa.me/628983631509" target="_blank" class="cta-button cta-filled"><i class="fab fa-whatsapp"></i> Hubungkan ke WhatsApp</a>
+                    </div>
+                    <div class="hero-cards animated" style="transition-delay: 300ms;">
+                        <div class="hero-card"><div class="icon">📄</div> <span>Verifikasi Teks</span></div>
+                        <div class="hero-card"><div class="icon">🖼️</div> <span>Analisis Gambar</span></div>
+                        <div class="hero-card"><div class="icon">🔗</div> <span>Cek Link</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="keunggulan">
+            <div class="container">
+                <h2 class="animated">Satu Bot untuk Semua Kebutuhan</h2>
+                <p class="subtitle animated">Dari perlindungan hingga persiapan, KarirAman adalah partner karier Anda.</p>
+                
+                <div class="tabs-container animated" style="transition-delay: 200ms;">
+                    <div class="tab-buttons">
+                        <button class="tab-button active" data-tab="1">Analisis Cerdas</button>
+                        <button class="tab-button" data-tab="2">Asisten Karier</button>
+                        <button class="tab-button" data-tab="3">Validasi Lanjutan</button>
+                    </div>
+                    <div id="tab-1" class="tab-content active">
+                        <div class="tab-content-inner">
+                            <div class="text">
+                                <h3>Verifikasi Cepat & Akurat</h3>
+                                <p>AI kami, "Budi", dilatih dengan konteks rekrutmen Indonesia untuk membedakan loker asli dan palsu. Analisis teks, gambar, dan link dalam hitungan detik untuk memberikan Anda ketenangan pikiran.</p>
+                            </div>
+                            <img src="https://i.imgur.com/8aZ2bCt.png" alt="Analisis Loker">
+                        </div>
+                    </div>
+                    <div id="tab-2" class="tab-content">
+                        <div class="tab-content-inner">
+                            <div class="text">
+                                <h3>Buat Lamaran Anda Menonjol</h3>
+                                <p>Dapatkan umpan balik profesional untuk CV dan surat lamaran. Tingkatkan kualitas tulisan, tonjolkan pencapaian, dan perbesar peluang Anda untuk dilirik oleh HRD perusahaan impian.</p>
+                            </div>
+                            <img src="https://i.imgur.com/KqU0Y3c.png" alt="Review CV">
+                        </div>
+                    </div>
+                    <div id="tab-3" class="tab-content">
+                        <div class="tab-content-inner">
+                            <div class="text">
+                                <h3>Periksa Hingga ke Akarnya</h3>
+                                <p>Tidak hanya menganalisis, KarirAman juga dapat memverifikasi profil perusahaan, alamat fisik, bahkan memeriksa rekam jejak nomor rekening melalui sumber data terpercaya untuk lapisan keamanan ekstra.</p>
+                            </div>
+                            <img src="https://i.imgur.com/I7bYtJt.png" alt="Validasi Data">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="testimoni">
+            <div class="container">
+                <h2 class="animated">Dipercaya oleh Ribuan Pencari Kerja</h2>
+                <div class="testimonial-grid">
+                    <div class="testimonial-card main animated">
+                        <p class="quote">"Ini aplikasi wajib. Nyaris kena tipu undangan interview yang minta transfer uang tiket. Saya forward ke KarirAman, dan langsung dapat balasan 'Sangat Berisiko' lengkap dengan alasannya. Terima kasih banyak!"</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/50?u=irfan" alt="Profil Irfan">
+                            <div class="author-info">
+                                <div class="name">Irfan Maulana</div>
+                                <div class="title">Fresh Graduate, Jakarta</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card side animated" style="transition-delay: 200ms;">
+                        <p class="quote">"Fitur review CV-nya keren. Singkat, padat, dan langsung ke intinya. Setelah saya perbaiki sesuai saran, panggilan interview jadi lebih sering."</p>
+                        <div class="testimonial-author">
+                            <img src="https://i.pravatar.cc/50?u=diana" alt="Profil Diana">
+                            <div class="author-info">
+                                <div class="name">Diana Putri</div>
+                                <div class="title">Content Writer</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section style="background-color: var(--white);">
+            <div class="container reveal" style="text-align: center;">
+                <h2>Siap Memulai Langkah Aman?</h2>
+                <p class="subtitle" style="margin-bottom: 40px;">Hubungkan KarirAman ke WhatsApp Anda dalam 10 detik. Gratis, cepat, dan tanpa instalasi.</p>
+                <a href="https://wa.me/628983631509" target="_blank" class="cta-button cta-filled" style="padding: 16px 38px; font-size: 1.15rem;"><i class="fab fa-whatsapp"></i> Hubungkan Sekarang</a>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <a href="#home" class="logo">KarirAman</a>
+                    <p>Menciptakan ekosistem pencarian kerja yang transparan dan aman.</p>
+                </div>
+                <div class="footer-links">
+                    <ul>
+                        <li class="heading">Produk</li>
+                        <li><a href="#keunggulan">Keunggulan</a></li>
+                        <li><a href="#testimoni">Testimoni</a></li>
+                    </ul>
+                    <ul>
+                        <li class="heading">Perusahaan</li>
+                        <li><a href="#">Tentang Kami</a></li>
+                        <li><a href="/documentation/">Dokumentasi API</a></li>
+                    </ul>
+                    <ul>
+                        <li class="heading">Legal</li>
+                        <li><a href="#">Kebijakan Privasi</a></li>
+                        <li><a href="#">Syarat & Ketentuan</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2025 KarirAman.</span>
+                <div class="footer-socials">
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const hamburger = document.getElementById('hamburger-menu');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            // Logic untuk menu mobile
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                mobileMenu.classList.toggle('active');
+                document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+            });
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburger.classList.remove('active');
+                    mobileMenu.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+            });
+
+            // Logic untuk animasi scroll
+            const animatedElements = document.querySelectorAll('.animated');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            animatedElements.forEach(el => { observer.observe(el); });
+
+            // Logic untuk fitur tab
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const tabId = button.getAttribute('data-tab');
+                    tabContents.forEach(content => {
+                        if (content.id === `tab-${tabId}`) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
