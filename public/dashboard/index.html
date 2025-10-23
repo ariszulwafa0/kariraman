@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Verifikasi - KarirAman</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-light: #eaebed;
+            --primary-blue: #006989;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --white: #ffffff;
+            --border-light: #d1d5db;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --accent-gold: #c59d5f; /* Saweria-like gold */
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 24px; }
+        h1, h2, h3 { font-weight: 800; color: var(--primary-blue); }
+        p { color: var(--text-muted); font-weight: 500; }
+
+        /* Header & Main Content (tidak berubah signifikan) */
+        header { padding: 20px 0; background-color: var(--white); border-bottom: 1px solid var(--border-light); position: sticky; top: 0; z-index: 100; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+        .logo { font-size: 1.8rem; font-weight: 800; color: var(--primary-blue); text-decoration: none; }
+        header a { color: var(--primary-blue); text-decoration: none; font-weight: 700; }
+        .dashboard-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
+        .nav-button { padding: 10px 20px; border: 2px solid var(--border-light); background: var(--white); border-radius: 50px; font-family: inherit; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all 0.3s ease; }
+        .nav-button:hover { background-color: #f0f2f5; }
+        .nav-button.active { background-color: var(--primary-blue); color: var(--white); border-color: var(--primary-blue); }
+        .content-panel { display: none; }
+        .content-panel.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .form-card { background-color: var(--white); padding: 30px; border-radius: 16px; border: 1px solid var(--border-light); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .form-card h2 { font-size: 1.8rem; margin-bottom: 8px; }
+        .form-card p { margin-bottom: 30px; }
+        .form-group { display: flex; flex-direction: column; gap: 15px; }
+        .form-row { display: flex; gap: 15px; }
+        .form-row input { flex: 1; }
+        textarea, input { width: 100%; padding: 15px; border: 1px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 1rem; transition: border-color 0.3s, box-shadow 0.3s; }
+        textarea:focus, input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 4px rgba(0, 105, 137, 0.1); }
+        .submit-btn { padding: 15px 30px; background-color: var(--primary-blue); color: var(--white); border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: background-color 0.3s ease; align-self: flex-start; }
+        .submit-btn:hover { background-color: #004b62; }
+
+        /* Modal System */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(29, 41, 55, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal.active { opacity: 1; visibility: visible; }
+        
+        .loading-modal-content { text-align: center; }
+        .loading-modal-content img { width: 80px; height: 80px; margin-bottom: 15px; }
+        .loading-modal-content p { color: var(--white); font-size: 1.2rem; font-weight: 700; }
+        
+        /* DESAIN BARU RESULT MODAL */
+        .result-modal-content {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            max-width: 650px; /* Lebih lebar sedikit untuk konten */
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh; /* Memungkinkan scrolling */
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            overflow: hidden; /* Penting untuk menjaga border-radius */
+        }
+        .modal.active .result-modal-content { transform: scale(1); }
+        
+        .result-modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-light);
+            position: relative;
+            background-color: #fefefe; /* Sedikit berbeda dari body */
+        }
+        .result-modal-header h3 {
+            font-size: 1.6rem; /* Lebih besar dari sebelumnya */
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--text-dark); /* Ubah warna agar lebih terbaca */
+        }
+        .result-modal-header .status-icon {
+            font-size: 1.2rem; /* Ikon lebih besar */
+            width: 40px; /* Lingkaran ikon lebih besar */
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: var(--white);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Tambah shadow agar lebih menonjol */
+        }
+        .status-Terverifikasi { background-color: var(--success); }
+        .status-Waspada { background-color: var(--warning); }
+        .status-Sangat { background-color: var(--danger); }
+        
+        .close-modal-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 2rem; /* Ikon close lebih besar */
+            color: var(--border-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1; /* Penting untuk penempatan vertikal */
+        }
+        .close-modal-btn:hover { transform: rotate(90deg); color: var(--text-dark); }
+        
+        .result-modal-body {
+            padding: 30px;
+            overflow-y: auto; /* Ini yang membuat body bisa di-scroll */
+            flex-grow: 1; /* Memastikan body mengisi ruang yang tersisa */
+        }
+        .result-modal-body h4 {
+            font-size: 1.1rem; /* Judul poin lebih besar */
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 25px; /* Spasi antar bagian */
+            margin-bottom: 12px;
+            display: flex; /* Untuk ikon di samping judul h4 */
+            align-items: center;
+            gap: 10px;
+        }
+        .result-modal-body h4:first-child { margin-top: 0; }
+        .result-modal-body ul { list-style: none; padding: 0; margin-left: 5px; } /* sedikit indent */
+        .result-modal-body li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px; /* Jarak antara ikon dan teks */
+            margin-bottom: 12px; /* Spasi antar list item */
+            line-height: 1.5;
+        }
+        .result-modal-body li i {
+            color: var(--primary-blue); /* Warna ikon list */
+            font-size: 1rem;
+            padding-top: 3px; /* Penyesuaian posisi ikon */
+        }
+        .result-modal-body .saran {
+            background-color: var(--bg-light);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border: 1px solid var(--border-light);
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        .result-modal-body .saran h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--primary-blue);
+        }
+        
+        .result-modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-light);
+            background-color: #f9fafb;
+            display: flex;
+            justify-content: flex-end; /* Tombol ke kanan */
+            gap: 15px;
+            flex-wrap: wrap; /* Agar tombol bisa wrap di layar kecil */
+        }
+        .footer-btn {
+            padding: 12px 25px; /* Tombol lebih besar */
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem; /* Teks tombol lebih besar */
+            display: inline-flex;
+            align-items: center;
+            gap: 10px; /* Jarak ikon dan teks */
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Tambah shadow */
+            cursor: pointer;
+        }
+        .btn-saweria { background-color: var(--accent-gold); color: var(--white); }
+        .btn-saweria:hover { background-color: #b46504; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .btn-lapor { background-color: var(--danger); color: var(--white); }
+        .btn-lapor:hover { background-color: #b22222; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+
+        /* Media queries untuk responsif (tidak berubah) */
+        @media (max-width: 768px) {
+            .dashboard-nav { flex-direction: column; align-items: stretch; }
+            .nav-button { border-radius: 8px; }
+            .result-modal-content { max-height: 95vh; margin: 10px; }
+            .result-modal-header h3 { font-size: 1.4rem; gap: 10px; }
+            .result-modal-header .status-icon { width: 35px; height: 35px; font-size: 1rem; }
+            .close-modal-btn { top: 10px; right: 10px; font-size: 1.5rem; }
+            .result-modal-body, .result-modal-header, .result-modal-footer { padding: 20px; }
+            .result-modal-footer { justify-content: center; flex-direction: column; align-items: stretch; }
+            .footer-btn { width: 100%; text-align: center; }
+        }
+        @media (max-width: 480px) {
+            .container { padding: 20px 15px; }
+            .form-card { padding: 20px; }
+            .form-card h2 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <a href="/" class="logo">KarirAman</a>
+            <a href="/">Halaman Utama</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="dashboard-nav">
+            <button class="nav-button active" data-target="panel-teks"><i class="fas fa-file-alt"></i> Cek Teks</button>
+            <button class="nav-button" data-target="panel-url"><i class="fas fa-link"></i> Cek URL</button>
+            <button class="nav-button" data-target="panel-email"><i class="fas fa-at"></i> Cek Email</button>
+            <button class="nav-button" data-target="panel-perusahaan"><i class="fas fa-building"></i> Cek Perusahaan</button>
+            <button class="nav-button" data-target="panel-rekening"><i class="fas fa-credit-card"></i> Cek Rekening</button>
+        </div>
+
+        <div id="panel-teks" class="content-panel active">
+            <div class="form-card">
+                <h2>Verifikasi Teks Lowongan</h2>
+                <p>Tempel seluruh konten teks lowongan kerja untuk dianalisis oleh sistem kami.</p>
+                <form id="form-cek-teks" class="form-group"><textarea id="input-cek-teks" rows="8" placeholder="Contoh: Dibutuhkan segera staff admin..."></textarea><button type="submit" class="submit-btn">Verifikasi Teks</button></form>
+            </div>
+        </div>
+        <div id="panel-url" class="content-panel">
+             <div class="form-card">
+                <h2>Verifikasi URL/Link</h2>
+                <p>Masukkan link website yang Anda curigai untuk diperiksa potensi phishing atau penipuan.</p>
+                <form id="form-cek-url" class="form-group"><input type="url" id="input-cek-url" placeholder="https://contoh-website-loker.com"><button type="submit" class="submit-btn">Verifikasi URL</button></form>
+            </div>
+        </div>
+        <div id="panel-email" class="content-panel">
+            <div class="form-card">
+                <h2>Verifikasi Email</h2>
+                <p>Periksa apakah alamat email rekruter menggunakan domain perusahaan resmi atau domain gratis yang mencurigakan.</p>
+                <form id="form-cek-email" class="form-group"><input type="email" id="input-cek-email" placeholder="hrd.perusahaan@gmail.com"><button type="submit" class="submit-btn">Verifikasi Email</button></form>
+            </div>
+        </div>
+        <div id="panel-perusahaan" class="content-panel">
+            <div class="form-card">
+                <h2>Verifikasi Perusahaan</h2>
+                <p>Cek keberadaan dan profil singkat perusahaan berdasarkan namanya.</p>
+                <form id="form-cek-perusahaan" class="form-group"><input type="text" id="input-cek-perusahaan" placeholder="PT Sejahtera Abadi"><button type="submit" class="submit-btn">Verifikasi Perusahaan</button></form>
+            </div>
+        </div>
+        <div id="panel-rekening" class="content-panel">
+            <div class="form-card">
+                <h2>Verifikasi Rekening Bank</h2>
+                <p>Periksa riwayat laporan penipuan sebuah rekening melalui database resmi Kominfo.</p>
+                <form id="form-cek-rekening" class="form-group"><div class="form-row"><input type="text" id="input-cek-rekening-bank" placeholder="Nama Bank (e.g., bca, bri)"><input type="text" id="input-cek-rekening-account" placeholder="Nomor Rekening"></div><button type="submit" class="submit-btn">Verifikasi Rekening</button></form>
+            </div>
+        </div>
+    </main>
+    
+    <div class="modal" id="loading-modal">
+        <div class="loading-modal-content">
+            <img src="../img/loading.png" alt="Loading">
+            <p>Sedang Menganalisis...</p>
+        </div>
+    </div>
+
+    <div class="modal" id="result-modal">
+        <div class="result-modal-content">
+            </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingModal = document.getElementById('loading-modal');
+            const resultModal = document.getElementById('result-modal');
+            const resultContent = document.getElementById('result-content'); // Sekarang konten ada di dalam .result-modal-content
+
+            const openModal = (modal) => modal.classList.add('active');
+            const closeModal = (modal) => modal.classList.remove('active');
+            
+            function formatResultHtml(data) {
+                // Determine status and icon
+                let statusClass = 'Waspada'; // Default
+                let iconHtml = '<i class="fas fa-exclamation-triangle"></i>'; // Default icon
+                let titleText = data.summary || 'Hasil Analisis';
+
+                if (data.skor_keseluruhan) {
+                    statusClass = data.skor_keseluruhan.split(' ')[0];
+                    if (statusClass === 'Terverifikasi') {
+                        iconHtml = '<i class="fas fa-check-circle"></i>';
+                    } else if (statusClass === 'Sangat') {
+                        iconHtml = '<i class="fas fa-times-circle"></i>'; // Menggunakan cross-circle untuk "Sangat Berisiko"
+                    }
+                    titleText = data.skor_keseluruhan;
+                } else if (data.error) {
+                    statusClass = 'Sangat'; // Error dianggap risiko tinggi
+                    iconHtml = '<i class="fas fa-exclamation-circle"></i>'; // Ikon error
+                    titleText = 'Terjadi Kesalahan';
+                }
+
+                // Header HTML
+                let headerHtml = `
+                    <div class="result-modal-header">
+                        <h3><span class="status-icon status-${statusClass}">${iconHtml}</span>${titleText}</h3>
+                        <button class="close-modal-btn" data-action="close-modal" aria-label="Tutup">&times;</button>
+                    </div>`;
+
+                // Body HTML
+                let bodyHtml = '<div class="result-modal-body">';
+                if (data.error) {
+                    bodyHtml += `<p style="color: var(--danger); font-weight: 600;">${data.error}</p>`;
+                    if (data.details) {
+                        bodyHtml += `<h4>Detail Error:</h4><p style="font-family: monospace; background-color: var(--bg-light); padding: 10px; border-radius: 5px; overflow-x: auto;">${data.details}</p>`;
+                    }
+                } else {
+                    if (data.poin_positif && data.poin_positif.length > 0) {
+                        bodyHtml += `<h4><i class="fas fa-thumbs-up"></i> Poin Positif:</h4><ul>`;
+                        data.poin_positif.forEach(p => { bodyHtml += `<li><i class="fas fa-check-circle"></i><p>${p}</p></li>`; });
+                        bodyHtml += `</ul>`;
+                    }
+                    if (data.poin_risiko_dan_kejanggalan && data.poin_risiko_dan_kejanggalan.length > 0) {
+                        bodyHtml += `<h4><i class="fas fa-exclamation-triangle"></i> Poin Risiko & Kejanggalan:</h4><ul>`;
+                        data.poin_risiko_dan_kejanggalan.forEach(p => { bodyHtml += `<li><i class="fas fa-times-circle"></i><p>${p}</p></li>`; }); // Menggunakan cross-circle untuk risiko
+                        bodyHtml += `</ul>`;
+                    }
+                    if (data.observasi_tambahan && data.observasi_tambahan.length > 0) {
+                        bodyHtml += `<h4><i class="fas fa-info-circle"></i> Observasi Tambahan:</h4><ul>`;
+                        data.observasi_tambahan.forEach(p => { bodyHtml += `<li><i class="fas fa-lightbulb"></i><p>${p}</p></li>`; });
+                        bodyHtml += `</ul>`;
+                    }
+                    if (data.saran_verifikasi) {
+                        bodyHtml += `<div class="saran"><h4><i class="fas fa-gavel"></i> Saran Verifikasi Lanjutan:</h4><p>${data.saran_verifikasi}</p></div>`;
+                    }
+                }
+                bodyHtml += '</div>';
+
+                // Footer with buttons
+                let footerHtml = '<div class="result-modal-footer">';
+                footerHtml += `<a href="https://saweria.co/USERNAME_SAWERIA_ANDA" target="_blank" class="footer-btn btn-saweria"><i class="fas fa-coffee"></i> Dukung via Saweria</a>`;
+                if (statusClass === 'Waspada' || statusClass === 'Sangat') {
+                    footerHtml += `<button data-action="report-fraud" class="footer-btn btn-lapor"><i class="fas fa-flag"></i> Lapor Penipuan</button>`;
+                }
+                footerHtml += '</div>';
+
+                return headerHtml + bodyHtml + footerHtml;
+            }
+
+            async function handleApiCall(endpoint, body) {
+                openModal(loadingModal);
+                try {
+                    const apiUrl = `${window.location.origin}/api/${endpoint}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await response.json();
+                    resultModal.querySelector('.result-modal-content').innerHTML = formatResultHtml(data);
+                } catch (error) {
+                    resultModal.querySelector('.result-modal-content').innerHTML = formatResultHtml({ 
+                        error: `Gagal terhubung ke API. Pastikan server API berjalan atau periksa koneksi internet Anda.`,
+                        details: error.message 
+                    });
+                } finally {
+                    closeModal(loadingModal);
+                    openModal(resultModal);
+                }
+            }
+
+            // Global event listener for modal buttons (delegation)
+            resultModal.addEventListener('click', (e) => {
+                if (e.target.dataset.action === 'close-modal' || e.target === resultModal) {
+                    closeModal(resultModal);
+                } else if (e.target.dataset.action === 'report-fraud') {
+                    alert('Fitur lapor penipuan sedang dalam pengembangan! Data analisis ini dapat Anda gunakan sebagai bukti.');
+                    // Di sini Anda bisa menambahkan logika untuk mengirim data laporan ke backend atau membuka form laporan
+                }
+            });
+
+            // Navigasi
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentPanels = document.querySelectorAll('.content-panel');
+            navButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const targetId = button.getAttribute('data-target');
+                    contentPanels.forEach(panel => {
+                        panel.classList.remove('active');
+                        if (panel.id === targetId) {
+                            panel.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            // Event listener form
+            document.getElementById('form-cek-teks').addEventListener('submit', e => { e.preventDefault(); handleApiCall('cek-teks', { text: document.getElementById('input-cek-teks').value }); });
+            document.getElementById('form-cek-url').addEventListener('submit', e => { e.preventDefault(); handleApiCall('cek-url', { url: document.getElementById('input-cek-url').value }); });
+            document.getElementById('form-cek-email').addEventListener('submit', e => { e.preventDefault(); handleApiCall('cek-email', { email: document.getElementById('input-cek-email').value }); });
+            document.getElementById('form-cek-perusahaan').addEventListener('submit', e => { e.preventDefault(); handleApiCall('cek-perusahaan', { companyName: document.getElementById('input-cek-perusahaan').value }); });
+            document.getElementById('form-cek-rekening').addEventListener('submit', e => { e.preventDefault(); handleApiCall('cek-rekening', { bank: document.getElementById('input-cek-rekening-bank').value.toLowerCase(), account: document.getElementById('input-cek-rekening-account').value }); });
+        });
+    </script>
+</body>
+</html>
