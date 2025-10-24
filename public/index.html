@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - KarirAman</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-light: #eaebed;
+            --primary-blue: #006989;
+            --text-dark: #1f2937;
+            --text-muted: #4b5563;
+            --white: #ffffff;
+            --border-light: #d1d5db;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Main Content Styling */
+        .main-content {
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .api-image {
+            max-width: 450px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 30px;
+            border-radius: 16px;
+        }
+        .main-content h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+        .main-content p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            max-width: 450px;
+        }
+        .docs-button {
+            display: inline-block;
+            padding: 15px 35px;
+            background-color: var(--primary-blue);
+            color: var(--white);
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .docs-button:hover {
+            background-color: #004b62;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 105, 137, 0.2);
+        }
+
+        /* Footer Styling (Sama seperti landing page utama) */
+        footer {
+            flex-shrink: 0;
+            background-color: var(--primary-blue);
+            color: var(--white);
+            padding: 80px 0 30px;
+        }
+        .footer-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 60px; }
+        .footer-grid h4 { margin-bottom: 20px; font-size: 1.1rem; color: var(--white); }
+        .footer-grid p { color: var(--border-light); opacity: 0.7; }
+        .footer-grid a { color: var(--border-light); text-decoration: none; display: block; margin-bottom: 12px; transition: opacity 0.3s ease; opacity: 0.7; }
+        .footer-grid a:hover { opacity: 1; }
+        .footer-bottom { text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 30px; color: var(--border-light); opacity: 0.6; }
+        .footer-socials { margin-top: 20px; display: flex; gap: 20px; justify-content: center; }
+        .footer-socials a { font-size: 1.5rem; color: var(--border-light); }
+        .footer-socials a:hover { color: var(--white); }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-content">
+        <img src="https://i.imgur.com/your-image-url.png" alt="KarirAman API" class="api-image">
+        
+        <h1>API KarirAman</h1>
+        <p>Anda telah mencapai endpoint API KarirAman. Layanan ini aktif dan berjalan. Untuk panduan penggunaan, silakan kunjungi dokumentasi kami.</p>
+        <a href="https://kariraman.web.id/documentation/" class="docs-button">Buka Dokumentasi</a>
+    </div>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div>
+                    <h4>KarirAman</h4>
+                    <p>Misi kami adalah menciptakan ekosistem pencarian kerja yang lebih aman dan terpercaya di Indonesia melalui teknologi.</p>
+                </div>
+                <div>
+                    <h4>Navigasi</h4>
+                    <a href="https://kariraman.web.id">Halaman Utama</a>
+                    <a href="https://kariraman.web.id/cek/">Dashboard Cek</a>
+                </div>
+                <div>
+                    <h4>Perusahaan</h4>
+                    <a href="#">Tentang Kami</a>
+                    <a href="#">Karier</a>
+                    <a href="#">Hubungi Kami</a>
+                </div>
+                <div>
+                    <h4>Legal</h4>
+                    <a href="https://kariraman.web.id/kebijakan.html">Kebijakan Privasi</a>
+                    <a href="#">Syarat & Ketentuan</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2025 KarirAman. Dibuat untuk melindungi perjalanan karier Anda.
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
