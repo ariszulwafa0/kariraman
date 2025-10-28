@@ -11,8 +11,8 @@ const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
-const modelPro = genAI.getGenerativeModel({ model: "gemini-2.5-flash-latest", safetySettings });
-const modelVision = genAI.getGenerativeModel({ model: "gemini-2.5-flash-latest", safetySettings });
+const modelPro = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
+const modelVision = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
 
 const jsonPromptStructure = `
 Berikan jawaban HANYA dalam format JSON yang ketat (tanpa markdown \`\`\`json):
