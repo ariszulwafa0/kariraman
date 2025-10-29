@@ -116,16 +116,79 @@ Selain menganalisis teks di gambar, lakukan **analisis kualitas visual gambar it
 * **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \`poin_risiko_dan_kejanggalan\`.
 `;
 
+// FUNGSI INI HARUS ADA SEBELUM FUNGSI HELPER
+async function analyzeCompany(companyName) {
+    const prompt = `Bertindak sebagai analis bisnis. Berikan ringkasan singkat tentang perusahaan Indonesia bernama "${companyName}". Fokus pada: 1. Nama, 2. Industri, 3. Website, 4. Alamat Kantor Pusat. Jika fiktif, sebutkan. Berikan jawaban HANYA dalam format JSON (tanpa markdown): {"nama_perusahaan": "${companyName}", "ditemukan": boolean, "industri": "...", "website_resmi": "...", "alamat_kantor": "...", "info_tambahan": "..."}`;
+    try {
+        const result = await modelPro.generateContent(prompt);
+        return JSON.parse(cleanJson(result.response.text()));
+    } catch (e) { console.error("Error di analyzeCompany:", e); return null; }
+}
+
+// --- FUNGSI HELPER BARU UNTUK VERIFIKASI SILANG ---
+/**
+ * Mengekstrak nama perusahaan dari teks dan memanggil analyzeCompany
+ * untuk mendapatkan data pembanding.
+ * @param {string} text Teks loker/undangan.
+ * @returns {string} String prompt tambahan untuk disisipkan.
+ */
+async function getCompanyVerificationPrompt(text) {
+    let companyInfoPrompt = ""; // Default string kosong
+    try {
+        const extractPrompt = `Tugas: Deteksi nama perusahaan yang paling mungkin dari teks iklan loker berikut. Balas HANYA dengan nama perusahaan. Jika tidak ada, balas 'TIDAK ADA'. Teks: "${text}"`;
+        const extractResult = await modelPro.generateContent(extractPrompt);
+        let companyName = (await extractResult.response.text()).trim();
+        
+        if (companyName !== 'TIDAK ADA' && companyName.length > 3) {
+            console.log(`[Verifikasi Silang] Mendeteksi perusahaan: ${companyName}. Mencari info...`);
+            // Memanggil fungsi analyzeCompany
+            const companyInfo = await analyzeCompany(companyName); 
+            
+            if (companyInfo && companyInfo.ditemukan) {
+                console.log(`[Verifikasi Silang] Info ditemukan: ${companyInfo.website_resmi}, ${companyInfo.alamat_kantor}`);
+                // Membuat prompt tambahan untuk AI
+                companyInfoPrompt = `
+    **DATA VERIFIKASI EKSTERNAL (Hasil Pencarian Internal AI):**
+    Anda telah mencari data untuk "${companyName}" dan menemukan:
+    * Website Resmi Seharusnya: "${companyInfo.website_resmi || 'Tidak ditemukan'}"
+    * Alamat Kantor Seharusnya: "${companyInfo.alamat_kantor || 'Tidak ditemukan'}"
+    
+    **TUGAS KETAT TAMBAHAN (WAJIB):**
+    Bandingkan DATA VERIFIKASI EKSTERNAL di atas dengan data di dalam loker.
+    1.  Jika email di loker (misal: @gmail.com atau @pt-loker.com) TIDAK SAMA dengan domain website resmi, ini adalah **POIN RISIKO BESAR**.
+    2.  Jika alamat di loker TIDAK SAMA atau JAUH BERBEDA dengan alamat kantor resmi, ini adalah **POIN RISIKO BESAR**.
+    3.  Wajib masukkan temuan ini ke \`poin_risiko_dan_kejanggalan\` dan \`verifikasi_silang\`.
+                `;
+            } else {
+                 console.log(`[Verifikasi Silang] Info untuk "${companyName}" tidak ditemukan.`);
+            }
+        }
+    } catch (e) {
+        console.error("Gagal melakukan verifikasi silang perusahaan:", e);
+        // Tetap lanjutkan analisis meskipun verifikasi silang gagal
+    }
+    return companyInfoPrompt;
+}
+
+
+// --- FUNGSI MODIFIKASI: analyzeText ---
 async function analyzeText(text) {
     const today = new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    // PANGGIL HELPER VERIFIKASI
+    const companyInfoPrompt = await getCompanyVerificationPrompt(text);
+
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
+    
+    ${companyInfoPrompt} // <-- DATA VERIFIKASI DISISIPKAN DI SINI
+
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
 
     **IKUTI ALUR LOGIKA INI SECARA KETAT:**
     **LANGKAH 0: PRA-ANALISIS RELEVANSI.**
     * **JIKA SAMA SEKALI TIDAK RELEVAN**, kembalikan HANYA JSON 'Tidak Relevan'.
-    * **JIKA RELEVAN**, lanjutkan ke Langkah 1.
+    * **JIKA RELEVAN**, lanjutkan ke Langkah 1 (dan Tugas Tambahan jika ada).
 
     **Tugas Anda:**
     1.  Analisis teks loker umum ini: "${text}" menggunakan alur logika di atas.
@@ -135,13 +198,35 @@ async function analyzeText(text) {
     return await generateAnalysis(prompt, modelPro);
 }
 
+// --- FUNGSI MODIFIKASI: analyzePhoto ---
 async function analyzePhoto(imageBuffer) {
     const today = new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
     
+    // LANGKAH 1: Lakukan OCR cepat untuk mendapatkan teks
+    let ocrText = "";
+    try {
+        const ocrPrompt = "Baca dan kembalikan SEMUA teks yang ada di gambar ini. Balas HANYA dengan teks yang diekstrak.";
+        const ocrResult = await modelVision.generateContent([ocrPrompt, imagePart]);
+        ocrText = (await ocrResult.response.text()).trim();
+        if(ocrText.length === 0) {
+             console.log("[Verifikasi Silang] OCR tidak menemukan teks di gambar.");
+        }
+    } catch (e) {
+        console.error("Gagal melakukan OCR untuk verifikasi silang:", e);
+    }
+    
+    // LANGKAH 2: Panggil helper verifikasi JIKA teks ditemukan
+    let companyInfoPrompt = "";
+    if (ocrText.length > 0) {
+        companyInfoPrompt = await getCompanyVerificationPrompt(ocrText);
+    }
+    
+    // LANGKAH 3: Buat Prompt Utama
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
-    ${ANALISIS_GAMBAR_TAMBAHAN} 
+    ${ANALISIS_GAMBAR_TAMBAHAN} 
+    ${companyInfoPrompt} // <-- DATA VERIFIKASI DISISIPKAN DI SINI
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
 
     **Tugas Anda:**
@@ -152,22 +237,49 @@ async function analyzePhoto(imageBuffer) {
     5.  Ekstrak data kontak dari teks di gambar.
     6.  Isi format JSON berikut.
     ${jsonPromptStructure}`;
+    
     return await generateAnalysis(prompt, modelVision, [imagePart]);
 }
 
+// --- FUNGSI MODIFIKASI: analyzeInvitation ---
 async function analyzeInvitation(data, isImage = false) {
     const today = new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
+    let companyInfoPrompt = "";
+    let imagePart = null;
+    
+    if (isImage) {
+        imagePart = { inlineData: { data: data.toString("base64"), mimeType: "image/jpeg" } };
+        // Lakukan OCR cepat
+        let ocrText = "";
+        try {
+            const ocrPrompt = "Baca dan kembalikan SEMUA teks yang ada di gambar ini. Balas HANYA dengan teks yang diekstrak.";
+            const ocrResult = await modelVision.generateContent([ocrPrompt, imagePart]);
+            ocrText = (await ocrResult.response.text()).trim();
+        } catch (e) {
+            console.error("Gagal melakukan OCR untuk verifikasi silang (undangan):", e);
+        }
+        
+        if (ocrText.length > 0) {
+            companyInfoPrompt = await getCompanyVerificationPrompt(ocrText);
+        }
+    } else {
+        // 'data' adalah teks
+        companyInfoPrompt = await getCompanyVerificationPrompt(data); 
+    }
+
+    // Buat Prompt Utama
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
     ${isImage ? ANALISIS_GAMBAR_TAMBAHAN : ''}
+    ${companyInfoPrompt} // <-- DATA VERIFIKASI DISISIPKAN DI SINI
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
 
     **TUGAS SPESIFIK: Menganalisis PANGGILAN INTERVIEW/TES.**
     Anda menerima sebuah teks/gambar yang merupakan **surat panggilan**. Terapkan semua Alur Logika, namun dengan **ketelitian ekstra** pada:
-    1.  **Personalisasi:** Apakah panggilan ini menyebutkan nama kandidat? Panggilan generik "Bapak/Ibu" lebih mencurigakan.
-    2.  **Konteks Lamaran:** Apakah ada referensi ke posisi yang dilamar?
-    3.  **Kontak Person:** Apakah ada nama HRD yang bisa dihubungi dan kontaknya profesional?
+    1.  Personalisasi: Apakah panggilan ini menyebutkan nama kandidat? Panggilan generik "Bapak/Ibu" lebih mencurigakan.
+    2.  Konteks Lamaran: Apakah ada referensi ke posisi yang dilamar?
+    3.  Kontak Person: Apakah ada nama HRD yang bisa dihubungi dan kontaknya profesional?
 
     **Tugas Anda:**
     ${isImage ? '1. Baca semua teks di gambar ini (OCR).' : '1. Analisis teks panggilan berikut:'}
@@ -179,13 +291,13 @@ async function analyzeInvitation(data, isImage = false) {
     ${jsonPromptStructure}`;
 
     if (isImage) {
-        const imagePart = { inlineData: { data: data.toString("base64"), mimeType: "image/jpeg" } };
         return await generateAnalysis(prompt, modelVision, [imagePart]);
     } else {
         return await generateAnalysis(prompt, modelPro);
     }
 }
 
+// --- FUNGSI REVIEW (TIDAK BERUBAH) ---
 async function reviewCV(cvText) {
     const prompt = `
     Anda adalah **Sistem Analis HRD AI.** Tugas Anda adalah memberikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
@@ -256,16 +368,11 @@ async function reviewLamaranImage(imageBuffer) {
     }
 }
 
+// --- FUNGSI LAINNYA (TIDAK BERUBAH) ---
 async function analyzeLink(url) { return await analyzeText(`Ini adalah link untuk dianalisis: ${url}`); }
 async function analyzeEmail(email) { return await analyzeText(`Ini adalah email untuk dianalisis: ${email}`); }
 async function analyzePdfText(textFromPdf) { return await analyzeText(textFromPdf); }
-async function analyzeCompany(companyName) {
-    const prompt = `Bertindak sebagai analis bisnis. Berikan ringkasan singkat tentang perusahaan Indonesia bernama "${companyName}". Fokus pada: 1. Nama, 2. Industri, 3. Website, 4. Alamat Kantor Pusat. Jika fiktif, sebutkan. Berikan jawaban HANYA dalam format JSON (tanpa markdown): {"nama_perusahaan": "${companyName}", "ditemukan": boolean, "industri": "...", "website_resmi": "...", "alamat_kantor": "...", "info_tambahan": "..."}`;
-    try {
-        const result = await modelPro.generateContent(prompt);
-        return JSON.parse(cleanJson(result.response.text()));
-    } catch (e) { console.error("Error di analyzeCompany:", e); return null; }
-}
+// (Fungsi analyzeCompany sudah dipindah ke atas)
 
 module.exports = {
     analyzeText,
