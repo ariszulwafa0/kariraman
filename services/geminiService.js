@@ -11,11 +11,14 @@ const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
-const modelPro = genAI.getGenerativeModel({ model: "gemini-2.5-flash", safetySettings });
-const modelVision = genAI.getGenerativeModel({ model: "gemini-2.5-flash", safetySettings });
+const modelPro = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", safetySettings });
+const modelVision = genAI.getGenerativeModel({ model: "gemini-pro-vision", safetySettings });
 
 const jsonPromptStructure = `
-Berikan jawaban HANYA dalam format JSON yang ketat (tanpa markdown \`\`\`json):
+Berikan jawaban HANYA dalam format JSON yang ketat (tanpa markdown \`\`\`json).
+SEMUA value di dalam JSON harus berupa string teks murni.
+JANGAN gunakan markdown (**...** atau *...*) di dalam string JSON.
+JANGAN menggunakan kata ganti orang pertama ("saya", "kami", "Aris") di dalam respons.
 {
   "skor_keseluruhan": "Terverifikasi - Lanjutkan dengan Hati-hati" | "Waspada - Verifikasi Lanjut Diperlukan" | "Sangat Berisiko - Kemungkinan Penipuan" | "Tidak Relevan",
   "nama_perusahaan_terdeteksi": "...",
@@ -62,9 +65,9 @@ async function generateAnalysis(prompt, model = modelPro, imageParts = null) {
     }
 }
 
-// --- ALUR LOGIKA UTAMA (PERBAIKAN ESCAPING) ---
+// --- ALUR LOGIKA UTAMA (VERSI BARU - TANPA PERSONA) ---
 const ALUR_LOGIKA_UTAMA = `
-Anda adalah **Aris, seorang HRD berpengalaman dari Indonesia.** Anda SANGAT paham seluk-beluk dan kebiasaan proses rekrutmen lokal.
+Anda adalah **Sistem Analis Keamanan AI** yang sangat teliti dan objektif. Anda SANGAT paham taktik penipuan loker di Indonesia.
 
 **ATURAN KONTEKS LOKAL (YANG DIANGGAP WAJAR JIKA BUKTI LAIN KUAT):**
 1.  **WA Pribadi HRD:** Wajar jika HRD menghubungi via nomor pribadi.
@@ -75,42 +78,42 @@ Anda adalah **Aris, seorang HRD berpengalaman dari Indonesia.** Anda SANGAT paha
 **ALUR LOGIKA ANALISIS (WAJIB DIIKUTI SECARA BERURUTAN):**
 
 **LANGKAH 1: Cek Red Flag Mutlak (SKOR = SANGAT BERISIKO)**
-Cari tanda-tanda ini terlebih dahulu. Jika salah satu ditemukan, langsung tetapkan skor "Sangat Berisiko - Kemungkinan Penipuan" dan sebutkan sebagai poin risiko utama. JANGAN LANJUTKAN ke langkah 2 atau 3.
+Cari tanda-tanda ini terlebih dahulu. Jika salah satu ditemukan, langsung tetapkan skor "Sangat Berisiko - Kemungkinan Penipuan".
 * **PERMINTAAN TRANSFER UANG:** Deteksi segala bentuk permintaan untuk mentransfer uang (biaya admin, travel, training, seragam, dll).
 * **DATA BANK SENSITIF:** Deteksi permintaan data super sensitif seperti "Foto Copy buku rekening tabungan", "SS Livin", "Screenshot M-Banking", "PIN", atau "OTP".
 
 **LANGKAH 2: Cek Fondasi Kepercayaan (Email).**
 Jika TIDAK ADA Red Flag Mutlak, validasi email:
 * Apakah ada **email dengan domain perusahaan yang sah** (contoh: @saranasukses.com, @astra.co.id)?
-    * **YA:** "Fondasi Kepercayaan" = **TERPENUHI**. Masukkan ini sebagai \\\`poin_positif\\\` utama. Lanjutkan ke Langkah 3.
-    * **TIDAK:** (Misal: hanya @gmail.com, @yahoo.com, atau kontak hanya via WA). Maka "Fondasi Kepercayaan" = **TIDAK TERPENUHI**. Masukkan "Penggunaan email gratis" atau "Kontak hanya via WA" sebagai \\\`poin_risiko_dan_kejanggalan\\\` utama. Lanjutkan ke Langkah 4.
+    * **YA:** "Fondasi Kepercayaan" = **TERPENUHI**. Masukkan ini sebagai \`poin_positif\` utama. Lanjutkan ke Langkah 3.
+    * **TIDAK:** (Misal: hanya @gmail.com, @yahoo.com, atau kontak hanya via WA). Maka "Fondasi Kepercayaan" = **TIDAK TERPENUHI**. Masukkan "Penggunaan email gratis" atau "Kontak hanya via WA" sebagai \`poin_risiko_dan_kejanggalan\` utama. Lanjutkan ke Langkah 4.
 
 **LANGKAH 3: Analisis Jika Fondasi Kepercayaan TERPENUHI (Ada Email Resmi).**
 * Skor **HARUS** "Terverifikasi - Lanjutkan dengan Hati-hati".
-* Hal-hal dari "Aturan Konteks Lokal" (WA Pribadi, jadwal mendadak) sekarang dianggap **NORMAL** dan hanya masuk ke \\\`observasi_tambahan\\\`.
-* **JANGAN** masukkan poin-poin normal tersebut ke \\\`poin_risiko_dan_kejanggalan\\\`.
+* Hal-hal dari "Aturan Konteks Lokal" (WA Pribadi, jadwal mendadak) sekarang dianggap **NORMAL** dan hanya masuk ke \`observasi_tambahan\`.
+* **JANGAN** masukkan poin-poin normal tersebut ke \`poin_risiko_dan_kejanggalan\`.
 * Satu-satunya yang bisa menurunkan skor ke "Waspada" adalah jika ada kejanggalan ekstrem lainnya (misal: alamat tidak ada sama sekali).
 
 **LANGKAH 4: Analisis Jika Fondasi Kepercayaan TIDAK TERPENUHI (Email Gratis/WA).**
 * Skor **TIDAK BOLEH** "Terverifikasi". Skor harus "Waspada" atau "Sangat Berisiko".
 * Validasi alamat fisik:
-    * Jika **Alamat Fisik VALID** (kawasan industri, gedung perkantoran), masukkan sebagai \\\`poin_positif\\\`, tapi **SKOR TETAP "Waspada"** karena emailnya tidak resmi.
-    * Jika **Alamat Fisik MENCURIGAKAN** (Ruko tidak jelas, perumahan) atau **FIKTIF**, masukkan ini sebagai \\\`poin_risiko_dan_kejanggalan\\\` tambahan dan pertimbangkan skor "Sangat Berisiko".
-* Masukkan "Penggunaan email gratis" sebagai \\\`poin_risiko_dan_kejanggalan\\\` utama.
+    * Jika **Alamat Fisik VALID** (kawasan industri, gedung perkantoran), masukkan sebagai \`poin_positif\`, tapi **SKOR TETAP "Waspada"** karena emailnya tidak resmi.
+    * Jika **Alamat Fisik MENCURIGAKAN** (Ruko tidak jelas, perumahan) atau **FIKTIF**, masukkan ini sebagai \`poin_risiko_dan_kejanggalan\` tambahan dan pertimbangkan skor "Sangat Berisiko".
+* Masukkan "Penggunaan email gratis" sebagai \`poin_risiko_dan_kejanggalan\` utama.
 `;
 
-// --- INSTRUKSI ANALISIS GAMBAR (PERBAIKAN ESCAPING) ---
+// --- INSTRUKSI ANALISIS GAMBAR (TETAP ADA) ---
 const ANALISIS_GAMBAR_TAMBAHAN = `
 **TUGAS ANALISIS VISUAL (KHUSUS GAMBAR):**
-Selain menganalisis teks di gambar, Anda harus **menganalisis kualitas visual gambar itu sendiri** sebagai bukti tambahan.
+Selain menganalisis teks di gambar, lakukan **analisis kualitas visual gambar itu sendiri** sebagai bukti tambahan.
 
-* **Red Flag Kualitas Gambar (SANGAT PENTING):**
-    1.  **Buram/Pecah:** Apakah gambarnya berkualitas rendah, buram, atau *pixelated*?
+* **Red Flag Kualitas Gambar:**
+    1.  **Buram/Pecah:** Apakah gambarnya berkualitas rendah atau buram?
     2.  **Logo Tempelan:** Apakah logo perusahaan terlihat *stretching* (gepeng) atau memiliki resolusi yang berbeda drastis dengan teks?
     3.  **Stempel "RESMI" Generik:** Apakah ada stempel "RESMI" atau "VALID"?
     4.  **Typo di Gambar:** Apakah ada kesalahan ketik (typo) di dalam gambar?
 
-* **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \\\`poin_risiko_dan_kejanggalan\\\`.
+* **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \`poin_risiko_dan_kejanggalan\`.
 `;
 
 async function analyzeText(text) {
@@ -121,12 +124,12 @@ async function analyzeText(text) {
 
     **IKUTI ALUR LOGIKA INI SECARA KETAT:**
     **LANGKAH 0: PRA-ANALISIS RELEVANSI.**
-    * **JIKA SAMA SEKALI TIDAK RELEVAN**, kembalikan HANYA JSON 'Tidak Relevan' yang sudah ditentukan.
+    * **JIKA SAMA SEKALI TIDAK RELEVAN**, kembalikan HANYA JSON 'Tidak Relevan'.
     * **JIKA RELEVAN**, lanjutkan ke Langkah 1.
 
     **Tugas Anda:**
     1.  Analisis teks loker umum ini: "${text}" menggunakan alur logika di atas.
-    2.  Ekstrak data kontak ke dalam objek \\\`data_terdeteksi\\\`.
+    2.  Ekstrak data kontak ke dalam objek \`data_terdeteksi\`.
     3.  Isi format JSON berikut.
     ${jsonPromptStructure}`;
     return await generateAnalysis(prompt, modelPro);
@@ -185,8 +188,9 @@ async function analyzeInvitation(data, isImage = false) {
 
 async function reviewCV(cvText) {
     const prompt = `
-    Anda adalah **Aris, seorang HRD profesional dan berpengalaman di Indonesia.** Tugas Anda adalah memberikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
+    Anda adalah **Sistem Analis HRD AI.** Tugas Anda adalah memberikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
     **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
+    **ATURAN BAHASA:** JANGAN menggunakan sapaan personal ("Halo [Nama]") atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     **Aspek ulasan:** Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
     Berikut adalah teks CV:
     ---
@@ -201,12 +205,13 @@ async function reviewCV(cvText) {
 
 async function reviewCVImage(imageBuffer) {
     const prompt = `
-    Anda adalah Aris, seorang HRD profesional.
+    Anda adalah **Sistem Analis HRD AI.**
     Tugas Anda:
     1.  Baca (OCR) semua teks di gambar CV ini.
     2.  Berikan ulasan (review) CV yang detail.
     3.  **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
-    4.  Fokus ulasan pada: Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
+    4.  **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
+    5.  Fokus ulasan pada: Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
     `;
     const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
     try {
@@ -220,9 +225,10 @@ async function reviewCVImage(imageBuffer) {
 
 async function reviewSuratLamaran(lamaranText) {
     const prompt = `
-    Anda adalah Aris, seorang HRD profesional dari Indonesia.
+    Anda adalah **Sistem Analis HRD AI.**
     Tugas Anda adalah me-review surat lamaran kerja berikut.
     Gunakan format markdown (*bold*) dan bullet point (•). JANGAN GUNAKAN '---'.
+    **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     Fokus ulasan pada: Struktur, Bahasa, dan Konten.
     Berikut adalah teks surat lamaran:\n---\n${lamaranText}\n---`;
     try {
@@ -233,11 +239,12 @@ async function reviewSuratLamaran(lamaranText) {
 
 async function reviewLamaranImage(imageBuffer) {
     const prompt = `
-    Anda adalah Aris, seorang HRD profesional.
+    Anda adalah **Sistem Analis HRD AI.**
     Tugas Anda:
     1.  Baca (OCR) semua teks di gambar surat lamaran ini.
     2.  Berikan ulasan (review) yang fokus pada: Struktur, Bahasa, dan Konten.
     3.  **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
+    4.  **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     `;
     const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
     try {
