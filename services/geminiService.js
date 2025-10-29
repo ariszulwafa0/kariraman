@@ -11,8 +11,8 @@ const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
-const modelPro = genAI.getGenerativeModel({ model: "gemini-2.5-flash", safetySettings });
-const modelVision = genAI.getGenerativeModel({ model: "gemini-2.5-flash", safetySettings });
+const modelPro = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", safetySettings });
+const modelVision = genAI.getGenerativeModel({ model: "gemini-pro-vision", safetySettings });
 
 const jsonPromptStructure = `
 Berikan jawaban HANYA dalam format JSON yang ketat (tanpa markdown \`\`\`json):
@@ -62,14 +62,15 @@ async function generateAnalysis(prompt, model = modelPro, imageParts = null) {
     }
 }
 
-// --- ALUR LOGIKA UTAMA (VERSI BARU LEBIH KETAT) ---
+// --- ALUR LOGIKA UTAMA (PERBAIKAN ESCAPING) ---
 const ALUR_LOGIKA_UTAMA = `
-Anda adalah **Aris, seorang HRD profesional dan sangat teliti dari Indonesia.** Anda SANGAT paham taktik penipuan loker yang canggih sekalipun.
+Anda adalah **Aris, seorang HRD berpengalaman dari Indonesia.** Anda SANGAT paham seluk-beluk dan kebiasaan proses rekrutmen lokal.
 
 **ATURAN KONTEKS LOKAL (YANG DIANGGAP WAJAR JIKA BUKTI LAIN KUAT):**
-1.  **WA Pribadi HRD:** Wajar JIKA emailnya resmi.
-2.  **Jadwal Mendadak:** Undangan 2-3 hari ke depan adalah NORMAL.
-3.  **Syarat Administrasi:** Permintaan materai dan fotokopi dokumen adalah BIASA.
+1.  **WA Pribadi HRD:** Wajar jika HRD menghubungi via nomor pribadi.
+2.  **Istilah "On Boarding":** Bisa berarti "undangan tes/interview".
+3.  **Jadwal Mendadak:** Undangan 2-3 hari ke depan adalah NORMAL.
+4.  **Syarat Administrasi:** Permintaan materai dan fotokopi dokumen adalah BIASA.
 
 **ALUR LOGIKA ANALISIS (WAJIB DIIKUTI SECARA BERURUTAN):**
 
@@ -81,34 +82,35 @@ Cari tanda-tanda ini terlebih dahulu. Jika salah satu ditemukan, langsung tetapk
 **LANGKAH 2: Cek Fondasi Kepercayaan (Email).**
 Jika TIDAK ADA Red Flag Mutlak, validasi email:
 * Apakah ada **email dengan domain perusahaan yang sah** (contoh: @saranasukses.com, @astra.co.id)?
-    * **YA:** "Fondasi Kepercayaan" = **TERPENUHI**. Masukkan ini sebagai `poin_positif` utama. Lanjutkan ke Langkah 3.
-    * **TIDAK:** (Misal: hanya @gmail.com, @yahoo.com, atau kontak hanya via WA). Maka "Fondasi Kepercayaan" = **TIDAK TERPENUHI**. Masukkan "Penggunaan email gratis" atau "Kontak hanya via WA" sebagai `poin_risiko_dan_kejanggalan` utama. Lanjutkan ke Langkah 4.
+    * **YA:** "Fondasi Kepercayaan" = **TERPENUHI**. Masukkan ini sebagai \\\`poin_positif\\\` utama. Lanjutkan ke Langkah 3.
+    * **TIDAK:** (Misal: hanya @gmail.com, @yahoo.com, atau kontak hanya via WA). Maka "Fondasi Kepercayaan" = **TIDAK TERPENUHI**. Masukkan "Penggunaan email gratis" atau "Kontak hanya via WA" sebagai \\\`poin_risiko_dan_kejanggalan\\\` utama. Lanjutkan ke Langkah 4.
 
 **LANGKAH 3: Analisis Jika Fondasi Kepercayaan TERPENUHI (Ada Email Resmi).**
 * Skor **HARUS** "Terverifikasi - Lanjutkan dengan Hati-hati".
-* Hal-hal dari "Aturan Konteks Lokal" (WA Pribadi, jadwal mendadak) sekarang dianggap **NORMAL** dan hanya masuk ke \`observasi_tambahan\`.
+* Hal-hal dari "Aturan Konteks Lokal" (WA Pribadi, jadwal mendadak) sekarang dianggap **NORMAL** dan hanya masuk ke \\\`observasi_tambahan\\\`.
+* **JANGAN** masukkan poin-poin normal tersebut ke \\\`poin_risiko_dan_kejanggalan\\\`.
 * Satu-satunya yang bisa menurunkan skor ke "Waspada" adalah jika ada kejanggalan ekstrem lainnya (misal: alamat tidak ada sama sekali).
 
 **LANGKAH 4: Analisis Jika Fondasi Kepercayaan TIDAK TERPENUHI (Email Gratis/WA).**
 * Skor **TIDAK BOLEH** "Terverifikasi". Skor harus "Waspada" atau "Sangat Berisiko".
 * Validasi alamat fisik:
-    * Jika **Alamat Fisik VALID** (kawasan industri, gedung perkantoran), masukkan sebagai `poin_positif`, tapi **SKOR TETAP "Waspada"** karena emailnya tidak resmi.
-    * Jika **Alamat Fisik MENCURIGAKAN** (Ruko tidak jelas, perumahan) atau **FIKTIF**, masukkan ini sebagai `poin_risiko` tambahan dan pertimbangkan skor "Sangat Berisiko".
-* Masukkan "Penggunaan email gratis" sebagai `poin_risiko` utama.
+    * Jika **Alamat Fisik VALID** (kawasan industri, gedung perkantoran), masukkan sebagai \\\`poin_positif\\\`, tapi **SKOR TETAP "Waspada"** karena emailnya tidak resmi.
+    * Jika **Alamat Fisik MENCURIGAKAN** (Ruko tidak jelas, perumahan) atau **FIKTIF**, masukkan ini sebagai \\\`poin_risiko_dan_kejanggalan\\\` tambahan dan pertimbangkan skor "Sangat Berisiko".
+* Masukkan "Penggunaan email gratis" sebagai \\\`poin_risiko_dan_kejanggalan\\\` utama.
 `;
 
-// --- INSTRUKSI ANALISIS GAMBAR (TETAP ADA) ---
+// --- INSTRUKSI ANALISIS GAMBAR (PERBAIKAN ESCAPING) ---
 const ANALISIS_GAMBAR_TAMBAHAN = `
 **TUGAS ANALISIS VISUAL (KHUSUS GAMBAR):**
 Selain menganalisis teks di gambar, Anda harus **menganalisis kualitas visual gambar itu sendiri** sebagai bukti tambahan.
 
-* **Red Flag Kualitas Gambar:**
-    1.  **Buram/Pecah:** Apakah gambarnya berkualitas rendah atau buram?
+* **Red Flag Kualitas Gambar (SANGAT PENTING):**
+    1.  **Buram/Pecah:** Apakah gambarnya berkualitas rendah, buram, atau *pixelated*?
     2.  **Logo Tempelan:** Apakah logo perusahaan terlihat *stretching* (gepeng) atau memiliki resolusi yang berbeda drastis dengan teks?
     3.  **Stempel "RESMI" Generik:** Apakah ada stempel "RESMI" atau "VALID"?
     4.  **Typo di Gambar:** Apakah ada kesalahan ketik (typo) di dalam gambar?
 
-* **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \`poin_risiko_dan_kejanggalan\`.
+* **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \\\`poin_risiko_dan_kejanggalan\\\`.
 `;
 
 async function analyzeText(text) {
@@ -116,13 +118,15 @@ async function analyzeText(text) {
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
-    **Tugas:** Analisis teks loker umum ini: "${text}".
+
+    **IKUTI ALUR LOGIKA INI SECARA KETAT:**
     **LANGKAH 0: PRA-ANALISIS RELEVANSI.**
-    * **JIKA SAMA SEKALI TIDAK RELEVAN**, kembalikan HANYA JSON 'Tidak Relevan'.
+    * **JIKA SAMA SEKALI TIDAK RELEVAN**, kembalikan HANYA JSON 'Tidak Relevan' yang sudah ditentukan.
     * **JIKA RELEVAN**, lanjutkan ke Langkah 1.
+
     **Tugas Anda:**
     1.  Analisis teks loker umum ini: "${text}" menggunakan alur logika di atas.
-    2.  Ekstrak data kontak ke dalam objek \`data_terdeteksi\`.
+    2.  Ekstrak data kontak ke dalam objek \\\`data_terdeteksi\\\`.
     3.  Isi format JSON berikut.
     ${jsonPromptStructure}`;
     return await generateAnalysis(prompt, modelPro);
@@ -136,6 +140,7 @@ async function analyzePhoto(imageBuffer) {
     ${ALUR_LOGIKA_UTAMA}
     ${ANALISIS_GAMBAR_TAMBAHAN} 
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
+
     **Tugas Anda:**
     1.  Baca semua teks yang ada di dalam gambar ini (OCR).
     2.  Analisis teks tersebut sebagai IKLAN LOKER UMUM menggunakan **ALUR LOGIKA KETAT** di atas.
