@@ -11,8 +11,8 @@ const safetySettings = [
     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
-const modelPro = genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings });
-const modelVision = genAI.getGenerativeModel({ model: "gemini-2.0-flash", safetySettings });
+const modelPro = genAI.getGenerativeModel({ model: "gemini-2.5-flash", safetySettings });
+const modelVision = genAI.getGenerativeModel({ model: "gemini-2.5-flash", safetySettings });
 
 const jsonPromptStructure = `
 Berikan jawaban HANYA dalam format JSON yang ketat (tanpa markdown \`\`\`json):
@@ -62,29 +62,53 @@ async function generateAnalysis(prompt, model = modelPro, imageParts = null) {
     }
 }
 
+// --- ALUR LOGIKA UTAMA (VERSI BARU LEBIH KETAT) ---
 const ALUR_LOGIKA_UTAMA = `
-Anda adalah **Aris, seorang HRD berpengalaman dari Indonesia.** Anda SANGAT paham seluk-beluk dan kebiasaan proses rekrutmen lokal.
+Anda adalah **Aris, seorang HRD profesional dan sangat teliti dari Indonesia.** Anda SANGAT paham taktik penipuan loker yang canggih sekalipun.
 
-**ATURAN KONTEKS LOKAL INDONESIA (WAJIB DIPAHAMI):**
-1.  **WA Pribadi HRD:** Wajar jika HRD menghubungi via nomor pribadi.
-2.  **Istilah "On Boarding":** Bisa berarti "undangan tes/interview".
-3.  **Jadwal Mendadak:** Undangan 2-3 hari ke depan adalah NORMAL.
-4.  **Syarat Administrasi:** Permintaan materai dan fotokopi dokumen adalah BIASA.
+**ATURAN KONTEKS LOKAL (YANG DIANGGAP WAJAR JIKA BUKTI LAIN KUAT):**
+1.  **WA Pribadi HRD:** Wajar JIKA emailnya resmi.
+2.  **Jadwal Mendadak:** Undangan 2-3 hari ke depan adalah NORMAL.
+3.  **Syarat Administrasi:** Permintaan materai dan fotokopi dokumen adalah BIASA.
 
-**ALUR LOGIKA BARU (WAJIB DIIKUTI):**
-**LANGKAH 1: Cek Red Flag Mutlak.**
-* Apakah ada permintaan **TRANSFER UANG**? Jika ADA, langsung skor "Sangat Berisiko".
-**LANGKAH 2: Cek Fondasi Kepercayaan.**
-* Jika TIDAK ADA permintaan uang, validasi **Email Perusahaan**, **Nama PT**, dan **Alamat Fisik**.
-* **ATURAN EMAS:** Jika ada **email dengan domain perusahaan yang sah**, maka **"Fondasi Kepercayaan" LANGSUNG TERPENUHI**.
-* Jika tidak ada email, "Fondasi Kepercayaan" terpenuhi jika Nama PT dan Alamat Fisik-nya valid.
-**LANGKAH 3: Analisis Berdasarkan Fondasi Kepercayaan.**
-* **JIKA "Fondasi Kepercayaan" TERPENUHI:**
-    * Anggap "Nomor WA pribadi", "Jadwal mendadak", "Syarat materai/dokumen" sebagai **NORMAL** dan masukkan ke \`observasi_tambahan\`.
-    * **DILARANG KERAS** memasukkannya ke \`poin_risiko_dan_kejanggalan\`.
-    * Satu-satunya yang bisa jadi \`poin_risiko\` adalah permintaan **SCREENSHOT MOBILE BANKING**.
-    * Skor **TIDAK BOLEH** "Waspada" atau "Sangat Berisiko".
-    * **DILARANG** berhalusinasi.
+**ALUR LOGIKA ANALISIS (WAJIB DIIKUTI SECARA BERURUTAN):**
+
+**LANGKAH 1: Cek Red Flag Mutlak (SKOR = SANGAT BERISIKO)**
+Cari tanda-tanda ini terlebih dahulu. Jika salah satu ditemukan, langsung tetapkan skor "Sangat Berisiko - Kemungkinan Penipuan" dan sebutkan sebagai poin risiko utama. JANGAN LANJUTKAN ke langkah 2 atau 3.
+* **PERMINTAAN TRANSFER UANG:** Deteksi segala bentuk permintaan untuk mentransfer uang (biaya admin, travel, training, seragam, dll).
+* **DATA BANK SENSITIF:** Deteksi permintaan data super sensitif seperti "Foto Copy buku rekening tabungan", "SS Livin", "Screenshot M-Banking", "PIN", atau "OTP".
+
+**LANGKAH 2: Cek Fondasi Kepercayaan (Email).**
+Jika TIDAK ADA Red Flag Mutlak, validasi email:
+* Apakah ada **email dengan domain perusahaan yang sah** (contoh: @saranasukses.com, @astra.co.id)?
+    * **YA:** "Fondasi Kepercayaan" = **TERPENUHI**. Masukkan ini sebagai `poin_positif` utama. Lanjutkan ke Langkah 3.
+    * **TIDAK:** (Misal: hanya @gmail.com, @yahoo.com, atau kontak hanya via WA). Maka "Fondasi Kepercayaan" = **TIDAK TERPENUHI**. Masukkan "Penggunaan email gratis" atau "Kontak hanya via WA" sebagai `poin_risiko_dan_kejanggalan` utama. Lanjutkan ke Langkah 4.
+
+**LANGKAH 3: Analisis Jika Fondasi Kepercayaan TERPENUHI (Ada Email Resmi).**
+* Skor **HARUS** "Terverifikasi - Lanjutkan dengan Hati-hati".
+* Hal-hal dari "Aturan Konteks Lokal" (WA Pribadi, jadwal mendadak) sekarang dianggap **NORMAL** dan hanya masuk ke \`observasi_tambahan\`.
+* Satu-satunya yang bisa menurunkan skor ke "Waspada" adalah jika ada kejanggalan ekstrem lainnya (misal: alamat tidak ada sama sekali).
+
+**LANGKAH 4: Analisis Jika Fondasi Kepercayaan TIDAK TERPENUHI (Email Gratis/WA).**
+* Skor **TIDAK BOLEH** "Terverifikasi". Skor harus "Waspada" atau "Sangat Berisiko".
+* Validasi alamat fisik:
+    * Jika **Alamat Fisik VALID** (kawasan industri, gedung perkantoran), masukkan sebagai `poin_positif`, tapi **SKOR TETAP "Waspada"** karena emailnya tidak resmi.
+    * Jika **Alamat Fisik MENCURIGAKAN** (Ruko tidak jelas, perumahan) atau **FIKTIF**, masukkan ini sebagai `poin_risiko` tambahan dan pertimbangkan skor "Sangat Berisiko".
+* Masukkan "Penggunaan email gratis" sebagai `poin_risiko` utama.
+`;
+
+// --- INSTRUKSI ANALISIS GAMBAR (TETAP ADA) ---
+const ANALISIS_GAMBAR_TAMBAHAN = `
+**TUGAS ANALISIS VISUAL (KHUSUS GAMBAR):**
+Selain menganalisis teks di gambar, Anda harus **menganalisis kualitas visual gambar itu sendiri** sebagai bukti tambahan.
+
+* **Red Flag Kualitas Gambar:**
+    1.  **Buram/Pecah:** Apakah gambarnya berkualitas rendah atau buram?
+    2.  **Logo Tempelan:** Apakah logo perusahaan terlihat *stretching* (gepeng) atau memiliki resolusi yang berbeda drastis dengan teks?
+    3.  **Stempel "RESMI" Generik:** Apakah ada stempel "RESMI" atau "VALID"?
+    4.  **Typo di Gambar:** Apakah ada kesalahan ketik (typo) di dalam gambar?
+
+* **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \`poin_risiko_dan_kejanggalan\`.
 `;
 
 async function analyzeText(text) {
@@ -93,58 +117,73 @@ async function analyzeText(text) {
     ${ALUR_LOGIKA_UTAMA}
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
     **Tugas:** Analisis teks loker umum ini: "${text}".
-    **LANGKAH 0:** Jika tidak relevan, kembalikan JSON 'Tidak Relevan'.
-    (Sisa instruksi...)
+    **LANGKAH 0: PRA-ANALISIS RELEVANSI.**
+    * **JIKA SAMA SEKALI TIDAK RELEVAN**, kembalikan HANYA JSON 'Tidak Relevan'.
+    * **JIKA RELEVAN**, lanjutkan ke Langkah 1.
+    **Tugas Anda:**
+    1.  Analisis teks loker umum ini: "${text}" menggunakan alur logika di atas.
+    2.  Ekstrak data kontak ke dalam objek \`data_terdeteksi\`.
+    3.  Isi format JSON berikut.
     ${jsonPromptStructure}`;
-    return await generateAnalysis(prompt);
+    return await generateAnalysis(prompt, modelPro);
 }
 
 async function analyzePhoto(imageBuffer) {
     const today = new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
+    
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
+    ${ANALISIS_GAMBAR_TAMBAHAN} 
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
     **Tugas Anda:**
-    1.  Baca semua teks di gambar (OCR).
+    1.  Baca semua teks yang ada di dalam gambar ini (OCR).
     2.  Analisis teks tersebut sebagai IKLAN LOKER UMUM menggunakan **ALUR LOGIKA KETAT** di atas.
-    3.  **LANGKAH 0:** Jika gambar bukan loker, kembalikan JSON 'Tidak Relevan'.
-    4.  Ekstrak data kontak dari gambar.
+    3.  Lakukan juga **TUGAS ANALISIS VISUAL** pada gambar itu sendiri.
+    4.  **LANGKAH 0:** Jika gambar bukan loker (meme, anime, dll), kembalikan JSON 'Tidak Relevan'.
+    5.  Ekstrak data kontak dari teks di gambar.
+    6.  Isi format JSON berikut.
     ${jsonPromptStructure}`;
     return await generateAnalysis(prompt, modelVision, [imagePart]);
 }
 
 async function analyzeInvitation(data, isImage = false) {
     const today = new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
+    ${isImage ? ANALISIS_GAMBAR_TAMBAHAN : ''}
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
+
     **TUGAS SPESIFIK: Menganalisis PANGGILAN INTERVIEW/TES.**
-    Terapkan Alur Logika dengan ketelitian ekstra pada: Personalisasi, Konteks Lamaran, Kontak Person.
+    Anda menerima sebuah teks/gambar yang merupakan **surat panggilan**. Terapkan semua Alur Logika, namun dengan **ketelitian ekstra** pada:
+    1.  **Personalisasi:** Apakah panggilan ini menyebutkan nama kandidat? Panggilan generik "Bapak/Ibu" lebih mencurigakan.
+    2.  **Konteks Lamaran:** Apakah ada referensi ke posisi yang dilamar?
+    3.  **Kontak Person:** Apakah ada nama HRD yang bisa dihubungi dan kontaknya profesional?
+
     **Tugas Anda:**
     ${isImage ? '1. Baca semua teks di gambar ini (OCR).' : '1. Analisis teks panggilan berikut:'}
     ${isImage ? '' : `"${data}"`}
-    2.  Analisis teks tersebut.
-    3.  Ekstrak data kontak.
+    ${isImage ? '2. Lakukan juga TUGAS ANALISIS VISUAL pada gambar panggilan ini.' : ''}
+    3.  Analisis teks tersebut menggunakan Alur Logika dan Tugas Spesifik di atas.
+    4.  Ekstrak semua data kontak.
+    5.  Isi format JSON berikut.
     ${jsonPromptStructure}`;
 
     if (isImage) {
         const imagePart = { inlineData: { data: data.toString("base64"), mimeType: "image/jpeg" } };
         return await generateAnalysis(prompt, modelVision, [imagePart]);
     } else {
-        return await generateAnalysis(prompt);
+        return await generateAnalysis(prompt, modelPro);
     }
 }
 
 async function reviewCV(cvText) {
     const prompt = `
     Anda adalah **Aris, seorang HRD profesional dan berpengalaman di Indonesia.** Tugas Anda adalah memberikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
-    **IKUTI ATURAN FORMATTING WHATSAPP INI DENGAN SANGAT KETAT:**
-    1.  **Bold:** Gunakan *satu tanda bintang* di awal dan akhir untuk teks tebal.
-    2.  **List:** Gunakan simbol • (bullet) untuk sub-poin.
-    3.  **Larangan:** **JANGAN PERNAH** menggunakan "---".
-    Aspek yang perlu diulas: Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
-    Berikut adalah teks CV yang perlu diulas:
+    **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
+    **Aspek ulasan:** Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
+    Berikut adalah teks CV:
     ---
     ${cvText}
     ---
@@ -158,10 +197,10 @@ async function reviewCV(cvText) {
 async function reviewCVImage(imageBuffer) {
     const prompt = `
     Anda adalah Aris, seorang HRD profesional.
-    Tugas Anda adalah:
-    1.  Baca (OCR) semua teks yang ada di dalam gambar CV ini.
-    2.  Setelah Anda membacanya, berikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
-    3.  Ikuti ATURAN FORMATTING WHATSAPP KETAT: Gunakan *tebal*, • list, JANGAN '---'.
+    Tugas Anda:
+    1.  Baca (OCR) semua teks di gambar CV ini.
+    2.  Berikan ulasan (review) CV yang detail.
+    3.  **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
     4.  Fokus ulasan pada: Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
     `;
     const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
@@ -178,9 +217,9 @@ async function reviewSuratLamaran(lamaranText) {
     const prompt = `
     Anda adalah Aris, seorang HRD profesional dari Indonesia.
     Tugas Anda adalah me-review surat lamaran kerja berikut.
-    Gunakan format markdown WhatsApp (*tebal*) dan bullet point (•). JANGAN GUNAKAN '---'.
+    Gunakan format markdown (*bold*) dan bullet point (•). JANGAN GUNAKAN '---'.
     Fokus ulasan pada: Struktur, Bahasa, dan Konten.
-    Berikut adalah teks surat lamaran yang perlu diulas:\n---\n${lamaranText}\n---`;
+    Berikut adalah teks surat lamaran:\n---\n${lamaranText}\n---`;
     try {
         const result = await modelPro.generateContent(prompt);
         return result.response.text();
@@ -190,10 +229,10 @@ async function reviewSuratLamaran(lamaranText) {
 async function reviewLamaranImage(imageBuffer) {
     const prompt = `
     Anda adalah Aris, seorang HRD profesional.
-    Tugas Anda adalah:
-    1.  Baca (OCR) semua teks yang ada di dalam gambar surat lamaran ini.
-    2.  Setelah Anda membacanya, berikan ulasan (review) yang fokus pada: Struktur, Bahasa, dan Konten.
-    3.  Ikuti ATURAN FORMATTING WHATSAPP KETAT: Gunakan *tebal*, • list, JANGAN '---'.
+    Tugas Anda:
+    1.  Baca (OCR) semua teks di gambar surat lamaran ini.
+    2.  Berikan ulasan (review) yang fokus pada: Struktur, Bahasa, dan Konten.
+    3.  **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
     `;
     const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
     try {
