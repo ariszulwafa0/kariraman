@@ -117,8 +117,27 @@ Selain menganalisis teks di gambar, lakukan **analisis kualitas visual gambar it
 `;
 
 // ========== FUNGSI YANG DIPERBARUI ==========
-async function analyzeCompany(companyName) {
-    const prompt = `Bertindak sebagai analis bisnis. Berikan ringkasan singkat tentang perusahaan Indonesia bernama "${companyName}". Fokus pada: 1. Nama, 2. Industri, 3. Website, 4. Alamat Kantor Pusat. Jika fiktif, sebutkan. Berikan jawaban HANYA dalam format JSON (tanpa markdown): {"nama_perusahaan": "${companyName}", "ditemukan": boolean, "industri": "...", "website_resmi": "...", "alamat_kantor": "...", "info_tambahan": "..."}`;
+async function analyzeCompany(companyNameQuery) {
+    // Ubah prompt menjadi lebih 'mencari' dan 'menganalisis kueri'
+    const prompt = `
+    Anda adalah analis bisnis yang membantu memverifikasi keberadaan perusahaan di Indonesia.
+    Pengguna memberikan kueri pencarian: "${companyNameQuery}".
+
+    TUGAS ANDA:
+    1.  Analisis kueri pengguna. Kueri ini mungkin nama parsial (misal: "Mattel"), salah ketik, atau gabungan (misal "Mattel kao").
+    2.  Gunakan pengetahuan Anda untuk mencari perusahaan Indonesia yang PALING RELEVAN dengan kueri tersebut.
+    3.  Jika Anda menemukan satu (1) perusahaan yang sangat cocok (misal: kueri "Mattel" -> "PT Mattel Indonesia", atau "Kao" -> "PT Kao Indonesia"), isi JSON berikut dengan data resminya.
+    4.  Jika kueri tidak jelas, tidak ditemukan, atau merujuk ke banyak perusahaan (misal kueri "Mattel kao"), JANGAN menebak. Isi JSON dengan 'ditemukan: false' dan jelaskan ambiguitas atau alasan tidak ditemukan di 'info_tambahan'.
+
+    JAWAB HANYA DALAM FORMAT JSON KETAT (tanpa markdown):
+    {
+      "nama_perusahaan": "[Nama resmi yang Anda temukan, atau kueri asli jika tidak ditemukan]",
+      "ditemukan": true | false,
+      "industri": "...",
+      "website_resmi": "...",
+      "alamat_kantor": "...",
+      "info_tambahan": "[Jika tidak ditemukan, jelaskan di sini. Misal: Kueri 'Mattel kao' tidak spesifik. Ini mungkin merujuk pada PT Mattel Indonesia atau PT Kao Indonesia.]"
+    }`;
     
     try {
         const result = await modelPro.generateContent(prompt);
@@ -133,12 +152,12 @@ async function analyzeCompany(companyName) {
             console.error("Error parsing JSON di analyzeCompany. Teks balasan:", jsonText);
             // Buat respons manual bahwa perusahaan tidak ditemukan
             return {
-                "nama_perusahaan": companyName,
+                "nama_perusahaan": companyNameQuery,
                 "ditemukan": false,
                 "industri": "Tidak diketahui",
                 "website_resmi": "Tidak ditemukan",
                 "alamat_kantor": "Tidak ditemukan",
-                "info_tambahan": "Sistem tidak dapat menemukan informasi valid untuk perusahaan ini. Harap verifikasi nama secara manual."
+                "info_tambahan": `Sistem tidak dapat menemukan informasi valid untuk kueri "${companyNameQuery}". Coba lagi dengan nama yang lebih spesifik.`
             };
         }
     } catch (e) { 
