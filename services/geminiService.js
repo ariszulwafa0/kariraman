@@ -116,7 +116,6 @@ Selain menganalisis teks di gambar, lakukan **analisis kualitas visual gambar it
 * **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \`poin_risiko_dan_kejanggalan\`.
 `;
 
-// FUNGSI INI HARUS ADA SEBELUM FUNGSI HELPER
 async function analyzeCompany(companyName) {
     const prompt = `Bertindak sebagai analis bisnis. Berikan ringkasan singkat tentang perusahaan Indonesia bernama "${companyName}". Fokus pada: 1. Nama, 2. Industri, 3. Website, 4. Alamat Kantor Pusat. Jika fiktif, sebutkan. Berikan jawaban HANYA dalam format JSON (tanpa markdown): {"nama_perusahaan": "${companyName}", "ditemukan": boolean, "industri": "...", "website_resmi": "...", "alamat_kantor": "...", "info_tambahan": "..."}`;
     try {
@@ -225,7 +224,7 @@ async function analyzePhoto(imageBuffer) {
     // LANGKAH 3: Buat Prompt Utama
     const prompt = `
     ${ALUR_LOGIKA_UTAMA}
-    ${ANALISIS_GAMBAR_TAMBAHAN} 
+    ${ANALISIS_GAMBAR_TAMBAHAN} 
     ${companyInfoPrompt} // <-- DATA VERIFIKASI DISISIPKAN DI SINI
     **KONTEKS PENTING: Tanggal hari ini adalah ${today}.**
 
@@ -297,14 +296,14 @@ async function analyzeInvitation(data, isImage = false) {
     }
 }
 
-// --- FUNGSI REVIEW (TIDAK BERUBAH) ---
+// --- FUNGSI REVIEW (Teks/PDF Saja) ---
 async function reviewCV(cvText) {
     const prompt = `
     Anda adalah **Sistem Analis HRD AI.** Tugas Anda adalah memberikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
     **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
     **ATURAN BAHASA:** JANGAN menggunakan sapaan personal ("Halo [Nama]") atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     **Aspek ulasan:** Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
-    Berikut adalah teks CV:
+    Berikut adalah teks CV (yang mungkin diekstrak dari PDF):
     ---
     ${cvText}
     ---
@@ -315,25 +314,7 @@ async function reviewCV(cvText) {
     } catch (error) { console.error("Error di reviewCV:", error); return null; }
 }
 
-async function reviewCVImage(imageBuffer) {
-    const prompt = `
-    Anda adalah **Sistem Analis HRD AI.**
-    Tugas Anda:
-    1.  Baca (OCR) semua teks di gambar CV ini.
-    2.  Berikan ulasan (review) CV yang detail.
-    3.  **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
-    4.  **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
-    5.  Fokus ulasan pada: Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
-    `;
-    const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
-    try {
-        const result = await modelVision.generateContent([prompt, imagePart]);
-        return result.response.text();
-    } catch (error) {
-        console.error("Error di reviewCVImage:", error);
-        return null;
-    }
-}
+// --- FUNGSI reviewCVImage DIHAPUS ---
 
 async function reviewSuratLamaran(lamaranText) {
     const prompt = `
@@ -342,38 +323,21 @@ async function reviewSuratLamaran(lamaranText) {
     Gunakan format markdown (*bold*) dan bullet point (•). JANGAN GUNAKAN '---'.
     **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     Fokus ulasan pada: Struktur, Bahasa, dan Konten.
-    Berikut adalah teks surat lamaran:\n---\n${lamaranText}\n---`;
+    Berikut adalah teks surat lamaran (yang mungkin diekstrak dari PDF):\n---\n${lamaranText}\n---`;
     try {
         const result = await modelPro.generateContent(prompt);
         return result.response.text();
     } catch (error) { console.error("Error di reviewSuratLamaran:", error); return null; }
 }
 
-async function reviewLamaranImage(imageBuffer) {
-    const prompt = `
-    Anda adalah **Sistem Analis HRD AI.**
-    Tugas Anda:
-    1.  Baca (OCR) semua teks di gambar surat lamaran ini.
-    2.  Berikan ulasan (review) yang fokus pada: Struktur, Bahasa, dan Konten.
-    3.  **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
-    4.  **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
-    `;
-    const imagePart = { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } };
-    try {
-        const result = await modelVision.generateContent([prompt, imagePart]);
-        return result.response.text();
-    } catch (error) {
-        console.error("Error di reviewLamaranImage:", error);
-        return null;
-    }
-}
+// --- FUNGSI reviewLamaranImage DIHAPUS ---
 
-// --- FUNGSI LAINNYA (TIDAK BERUBAH) ---
+// --- FUNGSI LAINNYA ---
 async function analyzeLink(url) { return await analyzeText(`Ini adalah link untuk dianalisis: ${url}`); }
 async function analyzeEmail(email) { return await analyzeText(`Ini adalah email untuk dianalisis: ${email}`); }
 async function analyzePdfText(textFromPdf) { return await analyzeText(textFromPdf); }
-// (Fungsi analyzeCompany sudah dipindah ke atas)
 
+// --- PERUBAHAN PADA MODULE EXPORTS ---
 module.exports = {
     analyzeText,
     analyzeLink,
@@ -381,9 +345,9 @@ module.exports = {
     analyzePhoto,
     analyzePdfText,
     analyzeCompany,
-    reviewCV,
-    reviewSuratLamaran,
-    analyzeInvitation,
-    reviewCVImage,
-    reviewLamaranImage
+    reviewCV,           // <-- reviewCVImage dihapus
+    reviewSuratLamaran, // <-- reviewLamaranImage dihapus
+    analyzeInvitation
+    // reviewCVImage,      <-- DIHAPUS
+    // reviewLamaranImage  <-- DIHAPUS
 };
