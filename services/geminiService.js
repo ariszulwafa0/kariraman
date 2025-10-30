@@ -56,12 +56,12 @@ async function generateAnalysis(prompt, model = modelPro, imageParts = null) {
                     "saran_verifikasi": "Data yang Anda kirim tidak terdeteksi sebagai lowongan kerja."
                 };
             }
-            throw parseError;
+            throw parseError; // Lempar error asli jika bukan 'Tidak Relevan'
         }
     } catch (error) {
         console.error("Error saat menghubungi Gemini atau memproses JSON:", error);
         console.error("Prompt yang Gagal:", prompt);
-        return null;
+        return null; // Kembalikan null jika ada error API
     }
 }
 
@@ -116,13 +116,38 @@ Selain menganalisis teks di gambar, lakukan **analisis kualitas visual gambar it
 * **Instruksi:** Jika Anda menemukan Red Flag Kualitas Gambar ini, **WAJIB** masukkan temuan tersebut ke dalam \`poin_risiko_dan_kejanggalan\`.
 `;
 
+// ========== FUNGSI YANG DIPERBARUI ==========
 async function analyzeCompany(companyName) {
     const prompt = `Bertindak sebagai analis bisnis. Berikan ringkasan singkat tentang perusahaan Indonesia bernama "${companyName}". Fokus pada: 1. Nama, 2. Industri, 3. Website, 4. Alamat Kantor Pusat. Jika fiktif, sebutkan. Berikan jawaban HANYA dalam format JSON (tanpa markdown): {"nama_perusahaan": "${companyName}", "ditemukan": boolean, "industri": "...", "website_resmi": "...", "alamat_kantor": "...", "info_tambahan": "..."}`;
+    
     try {
         const result = await modelPro.generateContent(prompt);
-        return JSON.parse(cleanJson(result.response.text()));
-    } catch (e) { console.error("Error di analyzeCompany:", e); return null; }
+        const jsonText = cleanJson(result.response.text()); // Dapatkan teksnya dulu
+
+        try {
+            // Coba parse JSON seperti biasa
+            return JSON.parse(jsonText); 
+        } catch (parseError) {
+            // --- Plan B ---
+            // Jika Gagal Parse, Gemini mungkin menjawab 'tidak ditemukan'
+            console.error("Error parsing JSON di analyzeCompany. Teks balasan:", jsonText);
+            // Buat respons manual bahwa perusahaan tidak ditemukan
+            return {
+                "nama_perusahaan": companyName,
+                "ditemukan": false,
+                "industri": "Tidak diketahui",
+                "website_resmi": "Tidak ditemukan",
+                "alamat_kantor": "Tidak ditemukan",
+                "info_tambahan": "Sistem tidak dapat menemukan informasi valid untuk perusahaan ini. Harap verifikasi nama secara manual."
+            };
+        }
+    } catch (e) { 
+        // Ini error API call (bukan parse error)
+        console.error("Error API call di analyzeCompany:", e); 
+        return null; // Kembalikan null jika ada error koneksi API
+    }
 }
+// ========== AKHIR PERUBAHAN ==========
 
 // --- FUNGSI HELPER BARU UNTUK VERIFIKASI SILANG ---
 /**
@@ -143,6 +168,7 @@ async function getCompanyVerificationPrompt(text) {
             // Memanggil fungsi analyzeCompany
             const companyInfo = await analyzeCompany(companyName); 
             
+            // Periksa jika companyInfo ada DAN ditemukan
             if (companyInfo && companyInfo.ditemukan) {
                 console.log(`[Verifikasi Silang] Info ditemukan: ${companyInfo.website_resmi}, ${companyInfo.alamat_kantor}`);
                 // Membuat prompt tambahan untuk AI
@@ -300,7 +326,7 @@ async function analyzeInvitation(data, isImage = false) {
 async function reviewCV(cvText) {
     const prompt = `
     Anda adalah **Sistem Analis HRD AI.** Tugas Anda adalah memberikan ulasan (review) CV yang detail, suportif, dan terstruktur dengan rapi.
-    **ATURAN FORMATTING:** Gunakan *bold* dan • list. JANGAN GUNAKAN "---".
+    **ATURAN FORMATTING:** Gunakan *bold* (**teks**), *italic* (*teks*), dan • list (* poin). JANGAN GUNAKAN "---".
     **ATURAN BAHASA:** JANGAN menggunakan sapaan personal ("Halo [Nama]") atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     **Aspek ulasan:** Ringkasan/Profil, Pengalaman Kerja, Pendidikan & Skill, Format & Tata Bahasa.
     Berikut adalah teks CV (yang mungkin diekstrak dari PDF):
@@ -314,13 +340,11 @@ async function reviewCV(cvText) {
     } catch (error) { console.error("Error di reviewCV:", error); return null; }
 }
 
-// --- FUNGSI reviewCVImage DIHAPUS ---
-
 async function reviewSuratLamaran(lamaranText) {
     const prompt = `
     Anda adalah **Sistem Analis HRD AI.**
     Tugas Anda adalah me-review surat lamaran kerja berikut.
-    Gunakan format markdown (*bold*) dan bullet point (•). JANGAN GUNAKAN '---'.
+    Gunakan format markdown (*bold* (**teks**), *italic* (*teks*), dan • list (* poin)). JANGAN GUNAKAN '---'.
     **ATURAN BAHASA:** JANGAN menggunakan sapaan personal atau kata ganti orang pertama ("saya"). Langsung berikan ulasan.
     Fokus ulasan pada: Struktur, Bahasa, dan Konten.
     Berikut adalah teks surat lamaran (yang mungkin diekstrak dari PDF):\n---\n${lamaranText}\n---`;
@@ -330,14 +354,12 @@ async function reviewSuratLamaran(lamaranText) {
     } catch (error) { console.error("Error di reviewSuratLamaran:", error); return null; }
 }
 
-// --- FUNGSI reviewLamaranImage DIHAPUS ---
-
 // --- FUNGSI LAINNYA ---
 async function analyzeLink(url) { return await analyzeText(`Ini adalah link untuk dianalisis: ${url}`); }
 async function analyzeEmail(email) { return await analyzeText(`Ini adalah email untuk dianalisis: ${email}`); }
 async function analyzePdfText(textFromPdf) { return await analyzeText(textFromPdf); }
 
-// --- PERUBAHAN PADA MODULE EXPORTS ---
+// --- MODULE EXPORTS (Sudah diperbarui) ---
 module.exports = {
     analyzeText,
     analyzeLink,
@@ -345,9 +367,8 @@ module.exports = {
     analyzePhoto,
     analyzePdfText,
     analyzeCompany,
-    reviewCV,           // <-- reviewCVImage dihapus
-    reviewSuratLamaran, // <-- reviewLamaranImage dihapus
+    reviewCV,
+    reviewSuratLamaran,
     analyzeInvitation
-    // reviewCVImage,      <-- DIHAPUS
-    // reviewLamaranImage  <-- DIHAPUS
+    // reviewCVImage dan reviewLamaranImage sudah dihapus
 };
